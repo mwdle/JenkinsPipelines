@@ -31,6 +31,7 @@ def call(Map config = [:]) {
 
         // Use Bitwarden provided .env variables from secure note for Docker Compose build and deploy
         // Assumes the associated .env variables are in a secure note in Bitwarden with the same name as the repository
+        // Uses function from shared library defined at the top of this file
         withBitwardenEnv(itemName: repoName) {
             if (params.COMPOSE_BUILD) {
                 stage('Build') {

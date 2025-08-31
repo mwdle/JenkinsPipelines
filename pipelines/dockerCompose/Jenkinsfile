@@ -1,0 +1,2 @@
+@Library("JenkinsPipelines") _ // This repository must be added to shared libraries within Jenkins!
+dockerComposePipeline() // See `vars/` in the root of this repository

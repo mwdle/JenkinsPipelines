@@ -21,8 +21,6 @@ def call(Map config = [:]) {
         return
     }
 
-    def repoName = env.JOB_NAME.split('/')[1]
-
     // Scripted pipeline instead of declarative pipeline allows wrapping multiple stages within `withBitwardenEnv` function from shared library to avoid refetching secrets
     node('docker') { // Agent label `docker` is defined in JCasC -- see `JCasC/jenkins.yaml` in https://github.com/mwdle/JenkinsConfig
         stage('Checkout') {
@@ -32,7 +30,7 @@ def call(Map config = [:]) {
         // Use Bitwarden provided .env variables from secure note for Docker Compose build and deploy
         // Assumes the associated .env variables are in a secure note in Bitwarden with the same name as the repository
         // Uses function from shared library defined at the top of this file
-        withBitwardenEnv(itemName: repoName) {
+        withBitwardenEnv(itemName: env.JOB_BASE_NAME) {
             if (params.COMPOSE_BUILD) {
                 stage('Build') {
                     echo "=== Building Docker Images ==="

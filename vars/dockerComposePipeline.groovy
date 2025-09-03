@@ -1,7 +1,5 @@
 // A flexible, multi-option pipeline for managing Docker Compose applications
 def call(Map config = [:]) {
-    // This library is only required if the USE_BITWARDEN parameter is set to true
-    library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
@@ -72,6 +70,8 @@ def call(Map config = [:]) {
         }
         // Proceed with the standard build/deploy logic if not tearing down.
         if (params.USE_BITWARDEN) {
+            // This library is only required if the USE_BITWARDEN parameter is set to true
+            library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
             // Assumes a secure note in Bitwarden with the same name as the repository.
             // The note's contents are parsed as a .env file and injected into the environment.
             echo "Bitwarden integration enabled"

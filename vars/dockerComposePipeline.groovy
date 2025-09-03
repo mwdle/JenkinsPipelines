@@ -9,6 +9,7 @@ def call(Map config = [:]) {
     // Define and apply job properties and parameters
     properties([
         parameters([
+            booleanParam(name: 'COMPOSE_DOWN', defaultValue: false, description: 'Action: Stop and remove all services defined in the Compose file and then exit the pipeline.'),
             booleanParam(name: 'FORCE_RECREATE', defaultValue: false, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: false, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: false, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
@@ -40,7 +41,7 @@ def call(Map config = [:]) {
         stage('Deploy') {
             echo "=== Deploying Services ==="
             if (params.FORCE_RECREATE) {
-                echo "Force recreate requested. Executing `docker compose down` before redeploy."
+                echo 'Force recreate requested. Executing `docker compose down` before redeploy.'
                 sh "docker compose down ${targetServices}"
             }
             if (params.PULL_IMAGES) {
@@ -62,6 +63,14 @@ def call(Map config = [:]) {
         stage('Checkout') {
             checkout scm
         }
+        if (params.COMPOSE_DOWN) {
+            stage('Teardown') {
+                echo "=== Tearing Down Services ==="
+                sh "docker compose down"
+            }
+            return // Exit
+        }
+        // Proceed with the standard build/deploy logic if not tearing down.
         if (params.USE_BITWARDEN) {
             // Assumes a secure note in Bitwarden with the same name as the repository.
             // The note's contents are parsed as a .env file and injected into the environment.

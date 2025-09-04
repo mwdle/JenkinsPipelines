@@ -1,4 +1,4 @@
-// A flexible, multi-option pipeline for managing Docker Compose applications
+// A flexible, multi-option pipeline for managing Docker Compose applications with support for loading .env files from Bitwarden Vault secure notes
 def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
@@ -75,7 +75,7 @@ def call(Map config = [:]) {
             // Assumes a secure note exists in Bitwarden with the same name as the repository.
             // The note's contents are written to a secure temporary file used by Docker Compose.
             echo "Bitwarden integration enabled"
-            withBitwarden(itemName: repoName) { credential ->
+            withBitwarden(itemName: repoName) { credential -> // See https://github.com/mwdle/JenkinsBitwardenUtils for documentation about other supported parameters for `withBitwarden`.
                 if (!credential.notes || credential.notes.trim().isEmpty()) {
                     error("Error: The 'notes' field in the Bitwarden item '${repoName}' is missing or empty.")
                 }

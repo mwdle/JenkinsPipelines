@@ -68,15 +68,26 @@ def call(Map config = [:]) {
             }
             return // Exit
         }
-        // Proceed with the standard build/deploy logic if not tearing down.
+        // Proceed with the standard build/deploy logic if not tearing down
         if (params.USE_BITWARDEN) {
-            // This library is only required if the USE_BITWARDEN parameter is set to true
+            // This library is only imported if the USE_BITWARDEN parameter is set to true
             library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
-            // Assumes a secure note in Bitwarden with the same name as the repository.
-            // The note's contents are parsed as a .env file and injected into the environment.
+            // Assumes a secure note exists in Bitwarden with the same name as the repository.
+            // The note's contents are written to a secure temporary file used by Docker Compose.
             echo "Bitwarden integration enabled"
-            withBitwardenEnv(itemName: repoName) {
-                deployAndBuildStages()
+            withBitwarden(itemName: repoName) { credential ->
+                if (!credential.notes || credential.notes.trim().isEmpty()) {
+                    error("Error: The 'notes' field in the Bitwarden item '${repoName}' is missing or empty.")
+                }
+                def tempEnvFile = "/tmp/jenkins-env-${java.util.UUID.randomUUID()}"
+                try {
+                    writeFile(file: tempEnvFile, text: credential.notes)
+                    withEnv(["COMPOSE_ENV_FILES=${tempEnvFile}"]) {
+                        deployAndBuildStages()
+                    }
+                } finally {
+                    sh "rm -f ${tempEnvFile}"
+                }
             }
         } else {
             echo "Bitwarden integration disabled"

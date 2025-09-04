@@ -86,7 +86,9 @@ def call(Map config = [:]) {
                         deployAndBuildStages()
                     }
                 } finally {
-                    sh "rm -f ${tempEnvFile}"
+                    // `set +x` prevents printing the command to logs
+                    // Not strictly necessary but results in less confusing logging and avoids displaying filepaths in logs.
+                    sh "set +x; rm -f ${tempEnvFile}"
                 }
             }
         } else {

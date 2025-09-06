@@ -3,6 +3,7 @@ def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
+    def useBitwardenDefault = config.useBitwardenDefault ?: false
 
     // Define and apply job properties and parameters
     properties([
@@ -13,7 +14,7 @@ def call(Map config = [:]) {
             booleanParam(name: 'PULL_IMAGES', defaultValue: false, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: '', description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
             stringParam(name: 'LOG_TAIL_COUNT', defaultValue: '0', description: 'Option: Number of log lines to show after deployment.'),
-            booleanParam(name: 'USE_BITWARDEN', defaultValue: true, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
+            booleanParam(name: 'USE_BITWARDEN', defaultValue: useBitwardenDefault, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
         ])
     ])
 

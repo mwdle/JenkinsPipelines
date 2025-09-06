@@ -24,7 +24,6 @@ def call(Map config = [:]) {
             checkout scm
         }
 
-        // Short git SHA for tagging
         def gitSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
 
         stage('Build Docker Image') {
@@ -33,20 +32,21 @@ def call(Map config = [:]) {
             def dockerfile = params.DOCKERFILE
 
             echo "=== Building Docker Image: ${imageName}:${tag} ==="
-            def img = docker.build("${imageName}:${tag}", "-f ${dockerfile} .")
-            img.tag("${gitSha}")
+            sh "docker build -f ${dockerfile} -t ${imageName}:${tag} -t ${imageName}:${gitSha} ."
         }
 
         stage('Push Docker Image') {
             def imageName = params.IMAGE_NAME
             def tag = params.TAG
 
-            echo "=== Pushing to Docker Registry ==="
-            docker.withRegistry('', params.DOCKER_CREDENTIALS_ID) {
-                def img = docker.image("${imageName}:${tag}")
-                img.push()
-                img.push(gitSha)
+            echo "=== Logging in to Docker Registry ==="
+            withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
             }
+
+            echo "=== Pushing Docker Image: ${imageName}:${tag} and ${imageName}:${gitSha} ==="
+            sh "docker push ${imageName}:${tag}"
+            sh "docker push ${imageName}:${gitSha}"
         }
     }
 }

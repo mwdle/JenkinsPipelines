@@ -21,7 +21,7 @@ def call(Map config = [:]) {
     ]
 
     if (disableTriggers) {
-        pipelineProperties.add(pipelineTriggers(triggers))
+        pipelineProperties.add(pipelineTriggers([]))
     }
 
     // Apply job properties and parameters

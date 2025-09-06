@@ -9,13 +9,15 @@ def call(Map config = [:]) {
     def defaultImageName = config.defaultImageName ?: ''
     def defaultDockerfile = config.defaultDockerfile ?: 'Dockerfile'
     def defaultTag = config.defaultTag ?: 'latest'
+    def defaultNoCache = config.defaultNoCache ?: false
 
     properties([
         parameters([
             stringParam(name: 'IMAGE_NAME', defaultValue: defaultImageName, description: 'Docker image to build and push'),
             stringParam(name: 'DOCKER_CREDENTIALS_ID', defaultValue: defaultDockerCreds, description: 'Jenkins credentials ID for Docker registry'),
             stringParam(name: 'TAG', defaultValue: defaultTag, description: 'Docker image tag to push'),
-            stringParam(name: 'DOCKERFILE', defaultValue: defaultDockerfile, description: 'Dockerfile to use for building the image')
+            stringParam(name: 'DOCKERFILE', defaultValue: defaultDockerfile, description: 'Dockerfile to use for building the image'),
+            booleanParam(name: 'NO_CACHE', defaultValue: defaultNoCache, description: 'Build Docker image without cache')
         ])
     ])
 
@@ -30,9 +32,10 @@ def call(Map config = [:]) {
             def imageName = params.IMAGE_NAME
             def tag = params.TAG
             def dockerfile = params.DOCKERFILE
+            def noCacheFlag = params.NO_CACHE ? '--no-cache' : ''
 
             echo "=== Building Docker Image: ${imageName}:${tag} ==="
-            sh "docker build -f ${dockerfile} -t ${imageName}:${tag} -t ${imageName}:${gitSha} ."
+            sh "docker build ${noCacheFlag} -f ${dockerfile} -t ${imageName}:${tag} -t ${imageName}:${gitSha} ."
         }
 
         stage('Push Docker Image') {

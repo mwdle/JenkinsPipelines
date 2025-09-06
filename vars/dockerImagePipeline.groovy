@@ -21,6 +21,13 @@ def call(Map config = [:]) {
         ])
     ])
 
+    // First build registers parameters and exits
+    if (env.BUILD_NUMBER == '1') {
+        echo "Jenkins is initializing this job. Please re-run to start a deployment."
+        currentBuild.result = 'NOT_BUILT'
+        return
+    }
+
     node(agentLabel) {
         stage('Checkout') {
             checkout scm

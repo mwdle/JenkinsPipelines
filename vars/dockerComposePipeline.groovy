@@ -29,9 +29,16 @@ def call(Map config = [:]) {
     def repoName = env.JOB_NAME.split('/')[1]
     def targetServices = params.TARGET_SERVICES
 
-    // This closure defines the core build and deploy logic, allowing it to be called
+    // This closure defines the core teardown, build, and deploy logic, allowing it to be called
     // conditionally with or without the Bitwarden environment wrapper.
-    def deployAndBuildStages = {
+    def stages = {
+        if (params.COMPOSE_DOWN) {
+            stage('Teardown') {
+                echo "=== Tearing Down Services ==="
+                sh "docker compose down"
+            }
+            return // Exit
+        }
         if (params.COMPOSE_BUILD) {
             stage('Build') {
                 echo "=== Building Docker Images ==="
@@ -63,13 +70,6 @@ def call(Map config = [:]) {
         stage('Checkout') {
             checkout scm
         }
-        if (params.COMPOSE_DOWN) {
-            stage('Teardown') {
-                echo "=== Tearing Down Services ==="
-                sh "docker compose down"
-            }
-            return // Exit
-        }
         // Proceed with the standard build/deploy logic if not tearing down
         if (params.USE_BITWARDEN) {
             // This library is only imported if the USE_BITWARDEN parameter is set to true
@@ -85,7 +85,7 @@ def call(Map config = [:]) {
                 try {
                     writeFile(file: tempEnvFile, text: credential.notes)
                     withEnv(["COMPOSE_ENV_FILES=${tempEnvFile}"]) {
-                        deployAndBuildStages()
+                        stages()
                     }
                 } finally {
                     // `set +x` prevents printing the command to logs
@@ -95,7 +95,7 @@ def call(Map config = [:]) {
             }
         } else {
             echo "Bitwarden integration disabled"
-            deployAndBuildStages()
+            stages()
         }
     }
 }

@@ -3,11 +3,13 @@ def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
+    // Disables webhook and other build triggers if true
+    def disableTriggers = config.disableTriggers ?: false
     // Applies the default pipeline parameter value 'USE_BITWARDEN'
     def useBitwardenDefault = config.useBitwardenDefault ?: false
 
     // Define and apply job properties and parameters
-    properties([
+    def jobProperties = [
         parameters([
             booleanParam(name: 'COMPOSE_DOWN', defaultValue: false, description: 'Action: Stop and remove all services defined in the Compose file and then exit the pipeline.'),
             booleanParam(name: 'FORCE_RECREATE', defaultValue: false, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
@@ -17,7 +19,15 @@ def call(Map config = [:]) {
             stringParam(name: 'LOG_TAIL_COUNT', defaultValue: '0', description: 'Option: Number of log lines to show after deployment.'),
             booleanParam(name: 'USE_BITWARDEN', defaultValue: useBitwardenDefault, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
         ])
-    ])
+    ]
+
+    if (disableTriggers) {
+        jobProperties.add(overrideIndexTriggers(false))
+        jobProperties.add(pipelineTriggers([]))
+    }
+
+    // Apply job properties and parameters
+    properties(jobProperties)
 
     // First build registers parameters and exits
     if (env.BUILD_NUMBER == '1') {

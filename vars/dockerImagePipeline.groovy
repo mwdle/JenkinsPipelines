@@ -1,6 +1,14 @@
 /*
  * A flexible pipeline for building and pushing Docker images.
  *
+ * --- Important Jenkins Behavior ---
+ *
+ * Changes to build parameters defined in this Jenkinsfile are not applied instantly.
+ * A build must run with the new code for any changes to default parameter values
+ * to take full effect in the Jenkins UI for subsequent builds.
+ *
+ * --- System Requirements ---
+ *
  * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g.,
  * Linux, macOS). The following tools are required on the agent:
  * - `sh` (Bourne shell)
@@ -26,7 +34,7 @@ def call(Map config = [:]) {
     properties([
         parameters([
             stringParam(name: 'IMAGE_NAME', defaultValue: defaultImageName, description: 'Docker image to build and push'),
-            stringParam(name: 'DOCKER_CREDENTIALS_ID', defaultValue: defaultDockerCreds, description: 'Jenkins credentials ID for Docker registry'),
+            stringParam(name: 'DOCKER_CREDENTIALS_ID', defaultValue: defaultDockerCredentialsId, description: 'Jenkins credentials ID for Docker registry'),
             stringParam(name: 'TAG', defaultValue: defaultTag, description: 'Docker image tag to push'),
             stringParam(name: 'DOCKERFILE', defaultValue: defaultDockerfile, description: 'Dockerfile to use for building the image'),
             booleanParam(name: 'NO_CACHE', defaultValue: defaultNoCache, description: 'Build Docker image without cache')

@@ -22,8 +22,11 @@ def call(Map config = [:]) {
     ]
 
     if (disableTriggers) {
+        // https://www.jenkins.io/doc/book/pipeline/syntax/#options
         jobProperties.add(overrideIndexTriggers(false))
         jobProperties.add(pipelineTriggers([]))
+    } else {
+        jobProperties.add(overrideIndexTriggers(true))
     }
 
     // Apply job properties and parameters

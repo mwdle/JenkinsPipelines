@@ -1,18 +1,32 @@
+import java.nio.file.Paths
+
 /*
  * A flexible, multi-option pipeline for managing Docker Compose applications.
  *
- * IMPORTANT: Changes to Jenkins job properties (e.g., parameters or triggers)
- * are not applied instantly, as they modify the job's underlying configuration.
- * A build must run with the new code for these changes to take full effect.
+ * --- Using Secrets with Bitwarden ---
  *
- * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will
- * run, after which triggers will be off.
+ * To use this feature correctly, it's important to understand the two ways Docker Compose uses environment files:
  *
- * - To RE-ENABLE triggers: Push `disableTriggers: false`. You must then run one
- * MANUAL build to reactivate automatic triggers for future pushes.
+ * 1. For Variable Substitution: Docker Compose looks for a default `.env` file in your project root.
+ *    It uses these variables to substitute values inside the `docker-compose.yml` file itself (e.g., replacing `${IMAGE_TAG}`).
  *
- * (Note: This behavior does not affect execution variables like `agentLabel`,
- * which take effect immediately on the next build.)
+ * 2. For Container Environments: The `env_file:` directive loads variables from a file directly into that specific container for your application to use at runtime.
+ *
+ * This pipeline feature uses the first method ONLY. It fetches your Bitwarden note and provides its contents to Docker Compose for variable substitution.
+ * Because of this, you CANNOT use the `env_file:` directive to load secrets from Bitwarden, as the pipeline does not place a physical file in your workspace for that purpose.
+ *
+ * --- Important Jenkins Behavior ---
+ *
+ * Changes to job properties (like build parameters or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
+ *
+ * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will run, after which triggers will be off.
+ * - To RE-ENABLE triggers: Push `disableTriggers: false`, then run one MANUAL build to reactivate automatic triggers.
+ *
+ * --- System Requirements ---
+ *
+ * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g., Linux, macOS). The following tools are required on the agent:
+ * - `sh` (Bourne shell)
+ * - Bitwarden CLI (`bw`)
  */
 def call(Map config = [:]) {
 
@@ -64,7 +78,6 @@ def call(Map config = [:]) {
         return
     }
 
-    def repoName = env.JOB_NAME.split('/')[1]
     def targetServices = params.TARGET_SERVICES
 
     // This closure defines the core teardown, build, and deploy logic, allowing it to be called
@@ -108,32 +121,53 @@ def call(Map config = [:]) {
         stage('Checkout') {
             checkout scm
         }
-        // Proceed with the standard build/deploy logic if not tearing down
         if (params.USE_BITWARDEN) {
-            // This library is only imported if the USE_BITWARDEN parameter is set to true
-            library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
-            // Assumes a secure note exists in Bitwarden with the same name as the repository.
-            // The note's contents are written to a secure temporary file used by Docker Compose.
             echo "Bitwarden integration enabled"
-            withBitwarden(itemName: repoName) { credential -> // See https://github.com/mwdle/JenkinsBitwardenUtils for documentation about other supported parameters for `withBitwarden`.
-                if (!credential.notes || credential.notes.trim().isEmpty()) {
-                    error("Error: The 'notes' field in the Bitwarden item '${repoName}' is missing or empty.")
-                }
-                def tempEnvFile = "/tmp/jenkins-env-${java.util.UUID.randomUUID()}"
-                try {
-                    writeFile(file: tempEnvFile, text: credential.notes)
-                    withEnv(["COMPOSE_ENV_FILES=${tempEnvFile}"]) {
-                        stages()
-                    }
-                } finally {
-                    // `set +x` prevents printing the command to logs
-                    // Not strictly necessary but results in less confusing logging and avoids displaying filepaths in logs.
-                    sh "set +x; rm -f ${tempEnvFile}"
-                }
-            }
+            _withBitwardenEnv(config) {
+                stages()
+            } 
         } else {
             echo "Bitwarden integration disabled"
             stages()
+        }
+    }
+}
+
+/**
+ * Wraps a block of code with a temporary environment sourced from Bitwarden.
+ *
+ * This helper function is designed to securely inject secrets for a Docker Compose execution. 
+ * It fetches the contents of one or more Bitwarden secure notes, writes them to temporary `.env` files, and sets the `COMPOSE_ENV_FILES` environment variable accordingly.
+ *
+ * The provided block of code is then executed within this context. All temporary files are automatically and securely cleaned up afterward, even if the nested code fails.
+ *
+ * @param config The pipeline configuration map. Can contain `bitwardenItems` (a List of note names) to override the default behavior of using the repo name.
+ * @param body A closure of code to execute within the configured environment.
+ */
+private void _withBitwardenEnv(Map config, Closure body) {
+    // The `JenkinsBitwardenUtils` library is dynamically imported so it is only loaded if needed
+    library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
+    // If 'bitwardenItems' is not provided in the config, default to a list containing just the repository name.
+    def bitwardenItemNames = config.bitwardenItems ?: [env.JOB_NAME.split('/')[1]]
+    def envFiles = []
+    try {
+        withBitwarden(itemNames: bitwardenItemNames) { credentialsMap -> // See https://github.com/mwdle/JenkinsBitwardenUtils for documentation about other supported parameters for `withBitwarden`.
+            credentialsMap.each { itemName, credential ->
+                if (!credential.notes || credential.notes.trim().isEmpty()) {
+                    error("Error: The 'notes' field in the Bitwarden item '${itemName}' is missing or empty.")
+                }
+                def envFile = Paths.get(System.getProperty("java.io.tmpdir"), "${java.util.UUID.randomUUID()}.env").toString()
+                writeFile(file: envFile, text: credential.notes)
+                envFiles.add(envFile)
+            }
+        }
+        withEnv(["COMPOSE_ENV_FILES=${envFiles.join(',')}"]) {
+            body() // Execute the closure
+        }
+    } finally {
+        // Cleanup all the temporary files that were created
+        envFiles.each { filePath ->
+            sh "rm -f ${filePath}"
         }
     }
 }

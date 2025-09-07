@@ -1,23 +1,51 @@
-// A flexible, multi-option pipeline for managing Docker Compose applications with support for loading .env files from Bitwarden Vault secure notes
+/*
+ * A flexible, multi-option pipeline for managing Docker Compose applications.
+ *
+ * IMPORTANT: Changes to Jenkins job properties (e.g., parameters or triggers)
+ * are not applied instantly, as they modify the job's underlying configuration.
+ * A build must run with the new code for these changes to take full effect.
+ *
+ * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will
+ * run, after which triggers will be off.
+ *
+ * - To RE-ENABLE triggers: Push `disableTriggers: false`. You must then run one
+ * MANUAL build to reactivate automatic triggers for future pushes.
+ *
+ * (Note: This behavior does not affect execution variables like `agentLabel`,
+ * which take effect immediately on the next build.)
+ */
 def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
     // Disables webhook and other build triggers if true
     def disableTriggers = config.disableTriggers ?: false
-    // Applies the default pipeline parameter value 'USE_BITWARDEN'
-    def useBitwardenDefault = config.useBitwardenDefault ?: false
+    
+    // Configurable default for the 'COMPOSE_DOWN' pipeline parameter
+    def defaultComposeDown = config.defaultComposeDown ?: false
+    // Configurable default for the 'FORCE_RECREATE' pipeline parameter
+    def defaultForceRecreate = config.defaultForceRecreate ?: false
+    // Configurable default for the 'COMPOSE_BUILD' pipeline parameter
+    def defaultComposeBuild = config.defaultComposeBuild ?: false
+    // Configurable default for the 'PULL_IMAGES' pipeline parameter
+    def defaultPullImages = config.defaultPullImages ?: false
+    // Configurable default for the 'TARGET_SERVICES' pipeline parameter
+    def defaultTargetServices = config.defaultTargetServices ?: ''
+    // Configurable default for the 'LOG_TAIL_COUNT' pipeline parameter
+    def defaultLogTailCount = config.defaultLogTailCount ?: '0'
+    // Configurable default for the 'USE_BITWARDEN' pipeline parameter
+    def defaultBitwardenEnabled = config.defaultBitwardenEnabled ?: false
 
     // Define and apply job properties and parameters
     def jobProperties = [
         parameters([
-            booleanParam(name: 'COMPOSE_DOWN', defaultValue: false, description: 'Action: Stop and remove all services defined in the Compose file and then exit the pipeline.'),
-            booleanParam(name: 'FORCE_RECREATE', defaultValue: false, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
-            booleanParam(name: 'COMPOSE_BUILD', defaultValue: false, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
-            booleanParam(name: 'PULL_IMAGES', defaultValue: false, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
-            stringParam(name: 'TARGET_SERVICES', defaultValue: '', description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
-            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: '0', description: 'Option: Number of log lines to show after deployment.'),
-            booleanParam(name: 'USE_BITWARDEN', defaultValue: useBitwardenDefault, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
+            booleanParam(name: 'COMPOSE_DOWN', defaultValue: defaultComposeDown, description: 'Action: Stop and remove all services defined in the Compose file and then exit the pipeline.'),
+            booleanParam(name: 'FORCE_RECREATE', defaultValue: defaultForceRecreate, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
+            booleanParam(name: 'COMPOSE_BUILD', defaultValue: defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
+            booleanParam(name: 'PULL_IMAGES', defaultValue: defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
+            stringParam(name: 'TARGET_SERVICES', defaultValue: defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
+            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: defaultLogTailCount, description: 'Option: Number of log lines to show after deployment.'),
+            booleanParam(name: 'USE_BITWARDEN', defaultValue: defaultBitwardenEnabled, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
         ])
     ]
 

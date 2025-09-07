@@ -19,6 +19,7 @@ import java.nio.file.Paths
  *
  * Changes to job properties (like build parameters or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
  *
+ * For example:
  * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will run, after which triggers will be off.
  * - To RE-ENABLE triggers: Push `disableTriggers: false`, then run one MANUAL build to reactivate automatic triggers.
  *
@@ -27,6 +28,7 @@ import java.nio.file.Paths
  * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g., Linux, macOS). The following tools are required on the agent:
  * - `sh` (Bourne shell)
  * - Bitwarden CLI (`bw`)
+ * - `git`
  */
 def call(Map config = [:]) {
 

@@ -1,14 +1,26 @@
-// Pipeline for building and pushing Docker images
+/*
+ * A flexible pipeline for building and pushing Docker images.
+ *
+ * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g.,
+ * Linux, macOS). The following tools are required on the agent:
+ * - `sh` (Bourne shell)
+ * - `docker`
+ * - `git`
+ */
 def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
 
-    // Setup pipeline parameter defaults using config map.
-    def defaultDockerCreds = config.defaultDockerCredentialsId ?: 'docker-hub'
+    // Configurable default for the 'DOCKER_CREDENTIALS_ID' pipeline parameter
+    def defaultDockerCredentialsId = config.defaultDockerCredentialsId ?: 'docker-hub'
+    // Configurable default for the 'IMAGE_NAME' pipeline parameter
     def defaultImageName = config.defaultImageName ?: ''
+    // Configurable default for the 'DOCKERFILE' pipeline parameter
     def defaultDockerfile = config.defaultDockerfile ?: 'Dockerfile'
+    // Configurable default for the 'TAG' pipeline parameter
     def defaultTag = config.defaultTag ?: 'latest'
+    // Configurable default for the 'NO_CACHE' pipeline parameter
     def defaultNoCache = config.defaultNoCache ?: false
 
     properties([
@@ -34,10 +46,10 @@ def call(Map config = [:]) {
         }
 
         def gitSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+        def imageName = params.IMAGE_NAME
+        def tag = params.TAG
 
         stage('Build Docker Image') {
-            def imageName = params.IMAGE_NAME
-            def tag = params.TAG
             def dockerfile = params.DOCKERFILE
             def noCacheFlag = params.NO_CACHE ? '--no-cache' : ''
 
@@ -46,9 +58,6 @@ def call(Map config = [:]) {
         }
 
         stage('Push Docker Image') {
-            def imageName = params.IMAGE_NAME
-            def tag = params.TAG
-
             echo "=== Logging in to Docker Registry ==="
             withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                 sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'

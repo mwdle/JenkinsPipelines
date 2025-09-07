@@ -17,7 +17,7 @@ import java.nio.file.Paths
  *
  * --- Important Jenkins Behavior ---
  *
- * Changes to job properties (like build parameters or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
+ * Changes to job properties (like build parameter defaults or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
  *
  * For example:
  * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will run, after which triggers will be off.

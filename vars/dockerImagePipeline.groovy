@@ -48,6 +48,11 @@ def call(Map config = [:]) {
         return
     }
 
+    // Validate all user-provided string parameters
+    def imageName = (params.IMAGE_NAME ~= /^[a-zA-Z0-9\/._-]+$/) ? params.IMAGE_NAME : error("Invalid characters in IMAGE_NAME.")
+    def tag = (params.TAG ~= /^[a-zA-Z0-9._-]+$/) ? params.TAG : error("Invalid characters in TAG.")
+    def dockerfile = (params.DOCKERFILE ~= /^[a-zA-Z0-9\/._-]+$/) ? params.DOCKERFILE : error("Invalid characters in DOCKERFILE.")
+
     node(agentLabel) {
         stage('Checkout') {
             checkout scm

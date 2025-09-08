@@ -80,6 +80,7 @@ def call(Map config = [:]) {
         return
     }
 
+    // Validate all user-provided string parameters
     def targetServices = (params.TARGET_SERVICES ~= /^[a-zA-Z0-9\s._-]*$/) ? params.TARGET_SERVICES : error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 

@@ -56,7 +56,7 @@ def call(Map config = [:]) {
     // Configurable default for the 'TARGET_SERVICES' pipeline parameter
     def defaultTargetServices = config.defaultTargetServices ?: ''
     // Configurable default for the 'LOG_TAIL_COUNT' pipeline parameter
-    def defaultLogTailCount = config.defaultLogTailCount ?: '0'
+    def defaultLogTailCount = (config.defaultLogTailCount ?: '0').toString() // Handle potential null with a default before calling .toString()
     // Configurable default for the 'USE_BITWARDEN' pipeline parameter
     def defaultBitwardenEnabled = config.defaultBitwardenEnabled ?: false
 

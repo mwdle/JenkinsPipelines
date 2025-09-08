@@ -3,6 +3,12 @@ import java.nio.file.Paths
 /*
  * A flexible, multi-option pipeline for managing Docker Compose applications.
  *
+ * --- Customization ---
+ *
+ * This pipeline can be customized with a post-checkout hook. By providing a
+ * closure to the `postCheckoutSteps` parameter, you can perform any custom
+ * preparatory steps immediately after the source code is checked out.
+ *
  * --- Using Secrets with Bitwarden ---
  *
  * To use this feature correctly, it's important to understand the two ways Docker Compose uses environment files:
@@ -36,6 +42,8 @@ def call(Map config = [:]) {
     def agentLabel = config.agentLabel ?: 'docker'
     // Disables webhook and other build triggers if true
     def disableTriggers = config.disableTriggers ?: false
+    // Optional closure for custom steps to run after checkout
+    def postCheckoutSteps = config.postCheckoutSteps
     
     // Configurable default for the 'COMPOSE_DOWN' pipeline parameter
     def defaultComposeDown = config.defaultComposeDown ?: false
@@ -124,6 +132,10 @@ def call(Map config = [:]) {
     node(agentLabel) {
         stage('Checkout') {
             checkout scm
+        }
+        // If a post-checkout closure was provided, execute it
+        if (postCheckoutSteps) {
+            postCheckoutSteps()
         }
         if (params.USE_BITWARDEN) {
             echo "Bitwarden integration enabled"

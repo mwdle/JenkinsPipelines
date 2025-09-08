@@ -89,7 +89,14 @@ def call(Map config = [:]) {
     }
 
     // Validate all user-provided string parameters
-    def targetServices = params.TARGET_SERVICES.matches(/^[a-zA-Z0-9\s._-]*$/) ? params.TARGET_SERVICES : error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
+    if (!params.TARGET_SERVICES.matches(/^[a-zA-Z0-9\s._-]*$/)) {
+        error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
+    }
+    if (!params.LOG_TAIL_COUNT.matches(/^\d+$/)) {
+        error("LOG_TAIL_COUNT must be a non-negative number.")
+    }
+
+    def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
     // This closure defines the core teardown, build, and deploy logic, allowing it to be called

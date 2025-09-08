@@ -80,7 +80,8 @@ def call(Map config = [:]) {
         return
     }
 
-    def targetServices = params.TARGET_SERVICES
+    def targetServices = (params.TARGET_SERVICES ~= /^[a-zA-Z0-9\s._-]*$/) ? params.TARGET_SERVICES : error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
+    def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
     // This closure defines the core teardown, build, and deploy logic, allowing it to be called
     // conditionally with or without the Bitwarden environment wrapper.
@@ -111,10 +112,10 @@ def call(Map config = [:]) {
             sh "docker compose up -d ${targetServices}"
             echo "Deployment status:"
             sh "docker compose ps ${targetServices}"
-            if (params.LOG_TAIL_COUNT.toInteger() > 0) {
+            if (logTailCount > 0) {
                 sleep 3 // Short sleep to give logs time to populate
-                echo "--> Showing last ${params.LOG_TAIL_COUNT} log lines:"
-                sh "docker compose logs --tail=${params.LOG_TAIL_COUNT} ${targetServices}"
+                echo "--> Showing last ${logTailCount} log lines:"
+                sh "docker compose logs --tail=${logTailCount} ${targetServices}"
             }
         }
     }
@@ -169,7 +170,7 @@ private void _withBitwardenEnv(Map config, Closure body) {
     } finally {
         // Cleanup all the temporary files that were created
         envFiles.each { filePath ->
-            sh "rm -f ${filePath}"
+            sh "rm -f '${filePath}'"
         }
     }
 }

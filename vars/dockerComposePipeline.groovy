@@ -47,6 +47,8 @@ def call(Map config = [:]) {
     
     // Configurable default for the 'COMPOSE_DOWN' pipeline parameter
     def defaultComposeDown = config.defaultComposeDown ?: false
+    // Configurable default for the 'COMPOSE_RESTART' pipeline parameter
+    def defaultComposeRestart = config.defaultComposeRestart ?: false
     // Configurable default for the 'FORCE_RECREATE' pipeline parameter
     def defaultForceRecreate = config.defaultForceRecreate ?: false
     // Configurable default for the 'COMPOSE_BUILD' pipeline parameter
@@ -63,7 +65,8 @@ def call(Map config = [:]) {
     // Define and apply job properties and parameters
     def jobProperties = [
         parameters([
-            booleanParam(name: 'COMPOSE_DOWN', defaultValue: defaultComposeDown, description: 'Action: Stop and remove all services defined in the Compose file and then exit the pipeline.'),
+            booleanParam(name: 'COMPOSE_DOWN', defaultValue: defaultComposeDown, description: 'Action: Stop and remove services and then exit the pipeline.'),
+            booleanParam(name: 'COMPOSE_RESTART', defaultValue: defaultComposeRestart, description: 'Action: Restart services and then exit the pipeline.'),
             booleanParam(name: 'FORCE_RECREATE', defaultValue: defaultForceRecreate, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
@@ -105,7 +108,14 @@ def call(Map config = [:]) {
         if (params.COMPOSE_DOWN) {
             stage('Teardown') {
                 echo "=== Tearing Down Services ==="
-                sh "docker compose down"
+                sh "docker compose down ${targetServices}"
+            }
+            return // Exit
+        }
+        if (params.COMPOSE_RESTART) {
+            stage('Restart') {
+                echo "=== Restarting Services ==="
+                sh "docker compose restart ${targetServices}"
             }
             return // Exit
         }

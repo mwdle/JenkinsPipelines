@@ -20,6 +20,10 @@ import java.nio.file.Paths
  *
  * This pipeline feature uses the first method ONLY. It fetches your Bitwarden note and provides its contents to Docker Compose for variable substitution.
  * Because of this, you CANNOT use the `env_file:` directive to load secrets from Bitwarden, as the pipeline does not place a physical file in your workspace for that purpose.
+
+ * For maximum security, it is highly recommended to run this pipeline on ephemeral Jenkins agents (e.g., containers).
+ * This ensures the temporary secret file is destroyed along with the agent's filesystem after the build,
+ * providing an absolute guarantee of cleanup.
  *
  * --- Security Advisory (CWE-209) ---
  *

@@ -105,6 +105,10 @@ def call(Map config = [:]) {
     // This closure defines the core teardown, build, and deploy logic, allowing it to be called
     // conditionally with or without the Bitwarden environment wrapper.
     def stages = {
+        stage('Validate') {
+            echo "=== Validating Docker Compose Configuration ==="
+            sh "docker compose config --quiet"
+        }
         if (params.COMPOSE_DOWN) {
             stage('Teardown') {
                 echo "=== Tearing Down Services ==="

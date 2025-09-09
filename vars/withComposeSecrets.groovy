@@ -1,3 +1,5 @@
+import java.nio.file.Paths
+
 /**
  * Wraps a block of code with a temporary environment sourced from Bitwarden.
  *

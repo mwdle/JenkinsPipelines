@@ -175,51 +175,13 @@ def call(Map config = [:]) {
         }
         if (params.USE_BITWARDEN) {
             echo "Bitwarden integration enabled"
-            _withBitwardenEnv(config) {
+            // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
+            withComposeSecrets(config) {
                 stages()
             } 
         } else {
             echo "Bitwarden integration disabled"
             stages()
-        }
-    }
-}
-
-/**
- * Wraps a block of code with a temporary environment sourced from Bitwarden.
- *
- * This helper function is designed to securely inject secrets for a Docker Compose execution. 
- * It fetches the contents of one or more Bitwarden secure notes, writes them to temporary `.env` files, and sets the `COMPOSE_ENV_FILES` environment variable accordingly.
- *
- * The provided block of code is then executed within this context. All temporary files are automatically and securely cleaned up afterward, even if the nested code fails.
- *
- * @param config The pipeline configuration map. Can contain `bitwardenItems` (a List of note names) to override the default behavior of using the repo name.
- * @param body A closure of code to execute within the configured environment.
- */
-private void _withBitwardenEnv(Map config, Closure body) {
-    // The `JenkinsBitwardenUtils` library is dynamically imported so it is only loaded if needed
-    library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
-    // If 'bitwardenItems' is not provided in the config, default to a list containing just the repository name.
-    def bitwardenItemNames = config.bitwardenItems ?: [env.JOB_NAME.split('/')[1]]
-    def envFiles = []
-    try {
-        withBitwarden(itemNames: bitwardenItemNames) { credentialsMap -> // See https://github.com/mwdle/JenkinsBitwardenUtils for documentation about other supported parameters for `withBitwarden`.
-            credentialsMap.each { itemName, credential ->
-                if (!credential.notes || credential.notes.trim().isEmpty()) {
-                    error("Error: The 'notes' field in the Bitwarden item '${itemName}' is missing or empty.")
-                }
-                def envFile = Paths.get(System.getProperty("java.io.tmpdir"), "${java.util.UUID.randomUUID()}.env").toString()
-                writeFile(file: envFile, text: credential.notes)
-                envFiles.add(envFile)
-            }
-        }
-        withEnv(["COMPOSE_ENV_FILES=${envFiles.join(',')}"]) {
-            body() // Execute the closure
-        }
-    } finally {
-        // Cleanup all the temporary files that were created
-        envFiles.each { filePath ->
-            sh "rm -f '${filePath}'"
         }
     }
 }

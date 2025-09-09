@@ -40,7 +40,7 @@
  *
  * @param body Closure containing the code to execute with the secrets injected.
  */
-def withComposeSecrets(Map config = [:], Closure body) {
+def call(Map config = [:], Closure body) {
     // Dynamically import Bitwarden helper library
     library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
 

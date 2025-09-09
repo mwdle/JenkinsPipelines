@@ -21,6 +21,18 @@ import java.nio.file.Paths
  * This pipeline feature uses the first method ONLY. It fetches your Bitwarden note and provides its contents to Docker Compose for variable substitution.
  * Because of this, you CANNOT use the `env_file:` directive to load secrets from Bitwarden, as the pipeline does not place a physical file in your workspace for that purpose.
  *
+ * --- Security Advisory (CWE-209) ---
+ *
+ * This pipeline is vulnerable to an "Information Exposure Through Error Message" attack.
+ * The `docker compose` commands used throughout this pipeline can leak sensitive environment variables into the build logs via their verbose error messages.
+ *
+ * An actor with commit access to a repository using this pipeline could deliberately craft a malformed `compose.yaml` to intentionally trigger a descriptive validation error,
+ * e.g., during a `docker compose up` command, causing a secret to be printed in the log.
+ *
+ * The primary mitigation for this is organizational, not technical:
+ * 1. Enforce code reviews on all changes to `compose.yaml`.
+ * 2. Strictly limit commit and/or Jenkins Job access using the principle of least privilege.
+ *
  * --- Important Jenkins Behavior ---
  *
  * Changes to job properties (like build parameter defaults or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.

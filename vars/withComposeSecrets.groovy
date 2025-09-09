@@ -52,7 +52,7 @@ void withComposeSecrets(Map config = [:], Closure body) {
         // Fetch secrets from Bitwarden
         withBitwarden(itemNames: bitwardenItemNames) { credentialsMap ->
             credentialsMap.each { itemName, credential ->
-                if (!credential.notes? .trim()) {
+                if (!credential.notes.trim()) {
                     error "Error: The Bitwarden item '${itemName}' contains no notes. Cannot proceed."
                 }
                 // Write to temporary .env file

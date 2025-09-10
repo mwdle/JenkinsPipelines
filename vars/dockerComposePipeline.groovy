@@ -1,10 +1,14 @@
 /*
  * A flexible, multi-option pipeline for managing Docker Compose applications.
  *
+ * --- Prerequisite ---
+ *
+ * The `JenkinsBitwardenUtils` library must be configured in Jenkins as a global shared library (Manage Jenkins → Configure System).
+ * See: https://github.com/mwdle/JenkinsBitwardenUtils
+ *
  * --- Customization ---
  *
- * This pipeline can be customized with a post-checkout hook. By providing a
- * closure to the `postCheckoutSteps` parameter, you can perform any custom
+ * This pipeline can be customized with a post-checkout hook. By providing a closure to the `postCheckoutSteps` parameter, you can perform any custom
  * preparatory steps immediately after the source code is checked out.
  *
  * --- Using Secrets with Bitwarden ---

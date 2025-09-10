@@ -34,8 +34,10 @@ import java.nio.file.Paths
  *     sh "docker compose up -d"
  * }
  *
- * --- See also ---
- * JenkinsBitwardenUtils: https://github.com/mwdle/JenkinsBitwardenUtils
+ * --- Prerequisite ---
+ *
+ * The `JenkinsBitwardenUtils` library must be configured in Jenkins as a global shared library (Manage Jenkins → Configure System).
+ * See: https://github.com/mwdle/JenkinsBitwardenUtils
  *
  * @param bitwardenItems *(Optional)* List of Bitwarden note names to fetch.
  * Defaults to a list containing the repository name: `[env.JOB_NAME.split('/')[1]]`.

@@ -19,6 +19,10 @@ def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
+    // Optional boolean Disables webhook and other build triggers if true
+    def disableTriggers = config.disableTriggers ?: false
+    // Optional cron schedule string for periodic builds. Only applied if `disableTriggers` is false.
+    def cronSchedule = config.cronSchedule?.trim()
 
     // Configurable default for the 'DOCKER_CREDENTIALS_ID' pipeline parameter
     def defaultDockerCredentialsId = config.defaultDockerCredentialsId ?: 'docker-hub'
@@ -31,7 +35,7 @@ def call(Map config = [:]) {
     // Configurable default for the 'NO_CACHE' pipeline parameter
     def defaultNoCache = config.defaultNoCache ?: false
 
-    properties([
+    def jobProperties = [
         parameters([
             stringParam(name: 'IMAGE_NAME', defaultValue: defaultImageName, description: 'Docker image to build and push'),
             stringParam(name: 'DOCKER_CREDENTIALS_ID', defaultValue: defaultDockerCredentialsId, description: 'Jenkins credentials ID for Docker registry'),
@@ -39,7 +43,17 @@ def call(Map config = [:]) {
             stringParam(name: 'DOCKERFILE', defaultValue: defaultDockerfile, description: 'Dockerfile to use for building the image'),
             booleanParam(name: 'NO_CACHE', defaultValue: defaultNoCache, description: 'Build Docker image without cache')
         ])
-    ])
+    ]
+
+    if (disableTriggers) {
+        jobProperties.add(overrideIndexTriggers(false))
+        jobProperties.add(pipelineTriggers([]))
+    } else if (cronSchedule) {
+        jobProperties.add(pipelineTriggers([cron(cronSchedule)]))
+    }
+
+    // Apply job properties and parameters
+    properties(jobProperties)
 
     // First build registers parameters and exits
     if (env.BUILD_NUMBER == '1') {

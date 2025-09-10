@@ -57,8 +57,10 @@ def call(Map config = [:]) {
 
     // Read the agent label from the config map, defaulting to 'docker'
     def agentLabel = config.agentLabel ?: 'docker'
-    // Disables webhook and other build triggers if true
+    // Optional boolean Disables webhook and other build triggers if true
     def disableTriggers = config.disableTriggers ?: false
+    // Optional cron schedule string for periodic builds. Only applied if `disableTriggers` is false.
+    def cronSchedule = config.cronSchedule?.trim()
     // Optional closure for custom steps to run after checkout
     def postCheckoutSteps = config.postCheckoutSteps
     
@@ -89,13 +91,15 @@ def call(Map config = [:]) {
             booleanParam(name: 'PULL_IMAGES', defaultValue: defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
             stringParam(name: 'LOG_TAIL_COUNT', defaultValue: defaultLogTailCount, description: 'Option: Number of log lines to show after deployment.'),
-            booleanParam(name: 'USE_BITWARDEN', defaultValue: defaultBitwardenEnabled, description: 'Option: Fetch a Bitwarden secure note with the same name as the repository, parse it as a .env file, and apply the contents as secure environment variables for the compose commands.')
+            booleanParam(name: 'USE_BITWARDEN', defaultValue: defaultBitwardenEnabled, description: 'Option: Fetch Bitwarden secure note(s) containing Docker Compose .env files (the specific item(s) to fetch are defined in the Jenkinsfile) and inject them into Docker Compose for substitution. Requires JenkinsBitwardenUtils library configured in Jenkins.')
         ])
     ]
 
     if (disableTriggers) {
         jobProperties.add(overrideIndexTriggers(false))
         jobProperties.add(pipelineTriggers([]))
+    } else if (cronSchedule) {
+        jobProperties.add(pipelineTriggers([cron(cronSchedule)]))
     }
 
     // Apply job properties and parameters

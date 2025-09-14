@@ -226,7 +226,7 @@ def call(Map config = [:]) {
                     script {
                         echo "Cleaning up old deployments..."
                         dir(appRoot) {
-                            sh "ls -v | head -n -1 | xargs -r rm -rf"
+                            sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
                         }
                     }
                 }

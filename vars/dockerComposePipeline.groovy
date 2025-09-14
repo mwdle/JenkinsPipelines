@@ -6,10 +6,16 @@
  * The `JenkinsBitwardenUtils` library must be configured in Jenkins as a global shared library (Manage Jenkins → Configure System).
  * See: https://github.com/mwdle/JenkinsBitwardenUtils
  *
+ * --- A Note on Compose Project Naming ---
+ *
+ * It is STRONGLY RECOMMENDED to define a static project name in your `docker-compose.yml` (e.g. `name: someProjectName`) or an `.env` file (e.g., `COMPOSE_PROJECT_NAME=my-app`). 
+ * Docker uses the folder name by default and Jenkins workspace directory names are not guaranteed to be consistent. 
+* A static name ensures that a running this pipeline correctly updates an existing deployment, rather than creating a new, parallel stack.
+ *
  * --- Customization ---
  *
  * This pipeline can be customized with a post-checkout hook. By providing a closure to the `postCheckoutSteps` parameter, you can perform any custom
- * preparatory steps immediately after the source code is checked out.
+ * preparatory steps immediately after the source code is checked out. This code executes within the `Checkout` stage. For example this could be a git checkout of a dependency into the workspace.
  *
  * --- Using Secrets with Bitwarden ---
  *
@@ -38,6 +44,22 @@
  * 1. Enforce code reviews on all changes to `compose.yaml`.
  * 2. Strictly limit commit and/or Jenkins Job access using the principle of least privilege.
  *
+ * --- Persisting the Workspace on the Host (for Relative Bind Mounts) ---
+ *
+ * This pipeline can run `docker compose` as if it were on the host, which is necessary for `docker-compose.yml` files that use relative bind mounts (`./some-file`).
+ * To enable this mode, you must do two things:
+ *
+ * 1. CONFIGURE THE AGENT: The directory where your release will live MUST be bind-mounted from the host into the Jenkins agent container with an identical ("mirrored") path. 
+ * For example, in JCasC agent template configuration: `type=bind,source=/opt/AppData,destination=/opt/AppData`
+ *
+ * 2. PROVIDE THE PATH: Pass the path to your application's permanent workspace via the
+ * `persistentWorkspace` parameter (e.g., `persistentWorkspace: '/opt/AppData/my-cool-app'`).
+ *
+ * **!!! WARNING !!!**
+ * The path provided for `persistentWorkspace` MUST be a directory dedicated exclusively to this pipeline.
+ * The pipeline's cleanup process will automatically and forcefully delete subdirectories within this path.
+ * DO NOT point this to a directory containing other important data.
+ *
  * --- Important Jenkins Behavior ---
  *
  * Changes to job properties (like build parameter defaults or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
@@ -50,7 +72,7 @@
  *
  * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g., Linux, macOS). The following tools are required on the agent:
  * - `sh` (Bourne shell)
- * - Bitwarden CLI (`bw`)
+ * - Bitwarden CLI (`bw`) -- see `./withComposeSecrets.groovy` (used when config.defaultBitwardenEnabled is true)
  * - `git`
  */
 def call(Map config = [:]) {
@@ -125,7 +147,7 @@ def call(Map config = [:]) {
 
     // This closure defines the core teardown, build, and deploy logic, allowing it to be called
     // conditionally with or without the Bitwarden environment wrapper.
-    def stages = {
+    def composeStages = {
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
             sh "docker compose config --quiet"
@@ -172,22 +194,56 @@ def call(Map config = [:]) {
     }
 
     node(agentLabel) {
-        stage('Checkout') {
-            checkout scm
-        }
-        // If a post-checkout closure was provided, execute it
-        if (postCheckoutSteps) {
-            postCheckoutSteps()
-        }
-        if (params.USE_BITWARDEN) {
-            echo "Bitwarden integration enabled"
-            // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
-            withComposeSecrets(config) {
-                stages()
-            } 
-        } else {
-            echo "Bitwarden integration disabled"
-            stages()
+
+        if (config.persistentWorkspace) {
+            def persistentWorkspace = "${config.persistentWorkspace}/${env.BUILD_NUMBER}"
+            stage('Checkout') {
+                checkout scm
+            }
+            // If a post-checkout closure was provided, execute it
+            if (postCheckoutSteps) {
+                postCheckoutSteps()
+            }
+            stage('Prepare Persistent Workspace') {
+                echo "Preparing persistent workspace at: ${persistentWorkspace}"
+                sh "mkdir -p ${persistentWorkspace}"
+                sh "cp -a . ${persistentWorkspace}/"
+            }
+            // Run all subsequent stages from within the persistent workspace.
+            dir(persistentWorkspace) {
+                if (params.USE_BITWARDEN) {
+                    echo "Bitwarden integration enabled"
+                    // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
+                    withComposeSecrets(config) { composeStages() } 
+                } else {
+                    echo "Bitwarden integration disabled"
+                    composeStages()
+                }
+                stage('Cleanup Old Deployments') {
+                    script {
+                        echo "Cleaning up old deployments..."
+                        dir(persistentWorkspace) {
+                            sh "ls -v | head -n -1 | xargs -r rm -rf"
+                        }
+                    }
+                }
+            }
+        } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
+            stage('Checkout') {
+                checkout scm
+            }
+            // If a post-checkout closure was provided, execute it
+            if (postCheckoutSteps) {
+                postCheckoutSteps()
+            }
+            if (params.USE_BITWARDEN) {
+                echo "Bitwarden integration enabled"
+                // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
+                withComposeSecrets(config) { composeStages() } 
+            } else {
+                echo "Bitwarden integration disabled"
+                composeStages()
+            }   
         }
     }
 }

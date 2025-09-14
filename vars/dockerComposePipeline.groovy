@@ -170,7 +170,7 @@ def call(Map config = [:]) {
         if (params.COMPOSE_BUILD) {
             stage('Build') {
                 echo "=== Building Docker Images ==="
-                sh "docker compose build --progress=plain ${targetServices}"
+                sh "docker compose build ${targetServices}"
             }
         }
         stage('Deploy') {

@@ -207,26 +207,36 @@ def call(Map config = [:]) {
             if (postCheckoutSteps) {
                 postCheckoutSteps()
             }
-            stage('Prepare Persistent Workspace') {
-                echo "Preparing persistent workspace at: ${deploymentPath}"
-                sh "mkdir -p ${deploymentPath}"
-                sh "cp -a . ${deploymentPath}/"
-            }
-            // Run all subsequent stages from within the persistent workspace.
-            dir(deploymentPath) {
-                if (params.USE_BITWARDEN) {
-                    echo "Bitwarden integration enabled"
-                    // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
-                    withComposeSecrets(config) { composeStages() } 
-                } else {
-                    echo "Bitwarden integration disabled"
-                    composeStages()
+            try {
+                stage('Prepare Persistent Workspace') {
+                    echo "Preparing persistent workspace at: ${deploymentPath}"
+                    sh "mkdir -p ${deploymentPath}"
+                    sh "cp -a . ${deploymentPath}/"
                 }
+                // Run all subsequent stages from within the persistent workspace.
+                dir(deploymentPath) {
+                    if (params.USE_BITWARDEN) {
+                        echo "Bitwarden integration enabled"
+                        // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
+                        withComposeSecrets(config) { composeStages() } 
+                    } else {
+                        echo "Bitwarden integration disabled"
+                        composeStages()
+                    }
+                }
+            } finally {
                 stage('Cleanup Old Deployments') {
                     script {
-                        echo "Cleaning up old deployments..."
-                        dir(appRoot) {
-                            sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
+                        if (params.COMPOSE_DOWN) {
+                            echo "Cleaning up all persistent deployment folders for ${repoName}..."
+                            sh "rm -rf ${appRoot}"
+                        } else if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+                            echo "Build was successful. Cleaning up old deployments..."
+                            dir(appRoot) {
+                                sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
+                            }
+                        } else {
+                            echo "Build failed. Skipping cleanup to preserve the last known-good deployment."
                         }
                     }
                 }

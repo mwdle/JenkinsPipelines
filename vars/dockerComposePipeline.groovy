@@ -49,14 +49,15 @@
  * This pipeline can run `docker compose` as if it were on the host, which is necessary for `docker-compose.yml` files that use relative bind mounts (`./some-file`).
  * To enable this mode, you must do two things:
  *
- * 1. CONFIGURE THE AGENT: The directory where your release will live MUST be bind-mounted from the host into the Jenkins agent container with an identical ("mirrored") path. 
+ * 1. CONFIGURE THE AGENT: The directory where your deployments will live MUST be bind-mounted from the host into the Jenkins agent container with an identical ("mirrored") path. 
  * For example, in JCasC agent template configuration: `type=bind,source=/opt/AppData,destination=/opt/AppData`
  *
- * 2. PROVIDE THE PATH: Pass the path to your application's permanent workspace via the
- * `persistentWorkspace` parameter (e.g., `persistentWorkspace: '/opt/AppData/my-cool-app'`).
+ * 2. SET THE DEPLOYMENT FOLDER: In your Jenkinsfile, set the `persistentWorkspace` parameter to the path you just configured.
+ * The pipeline will create its own project-specific subdirectories inside this folder.
+ * Example: `persistentWorkspace: '/opt/AppData'`
  *
  * **!!! WARNING !!!**
- * The path provided for `persistentWorkspace` MUST be a directory dedicated exclusively to this pipeline.
+ * The path provided for `persistentWorkspace` MUST be a directory dedicated exclusively to deployments.
  * The pipeline's cleanup process will automatically and forcefully delete subdirectories within this path.
  * DO NOT point this to a directory containing other important data.
  *
@@ -196,7 +197,9 @@ def call(Map config = [:]) {
     node(agentLabel) {
 
         if (config.persistentWorkspace) {
-            def persistentWorkspace = "${config.persistentWorkspace}/${env.BUILD_NUMBER}"
+            def repoName = env.JOB_NAME.split('/')[1]
+            def appRoot = "${config.persistentWorkspace}/${repoName}"
+            def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
             stage('Checkout') {
                 checkout scm
             }
@@ -205,12 +208,12 @@ def call(Map config = [:]) {
                 postCheckoutSteps()
             }
             stage('Prepare Persistent Workspace') {
-                echo "Preparing persistent workspace at: ${persistentWorkspace}"
-                sh "mkdir -p ${persistentWorkspace}"
-                sh "cp -a . ${persistentWorkspace}/"
+                echo "Preparing persistent workspace at: ${deploymentPath}"
+                sh "mkdir -p ${deploymentPath}"
+                sh "cp -a . ${deploymentPath}/"
             }
             // Run all subsequent stages from within the persistent workspace.
-            dir(persistentWorkspace) {
+            dir(deploymentPath) {
                 if (params.USE_BITWARDEN) {
                     echo "Bitwarden integration enabled"
                     // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
@@ -222,7 +225,7 @@ def call(Map config = [:]) {
                 stage('Cleanup Old Deployments') {
                     script {
                         echo "Cleaning up old deployments..."
-                        dir(persistentWorkspace) {
+                        dir(appRoot) {
                             sh "ls -v | head -n -1 | xargs -r rm -rf"
                         }
                     }

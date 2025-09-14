@@ -194,7 +194,7 @@ def call(Map config = [:]) {
     }
 
     // This closure defines the core build execution logic, allowing it to be called conditionally with or without the persistent workspace feature.
-    def executeBuild = {
+    def deploymentFlow = {
         stage('Checkout') {
             checkout scm
         }
@@ -219,7 +219,7 @@ def call(Map config = [:]) {
             def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
             try {
                 dir(deploymentPath) {
-                    executeBuild()
+                    deploymentFlow()
                 }
             } finally {
                 stage('Cleanup Old Deployments') {
@@ -237,7 +237,7 @@ def call(Map config = [:]) {
                 }
             }
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
-            executeBuild()
+            deploymentFlow()
         }
     }
 }

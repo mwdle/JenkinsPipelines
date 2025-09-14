@@ -194,7 +194,7 @@ def call(Map config = [:]) {
     }
 
     // This closure defines the core build execution logic, allowing it to be called conditionally with or without the persistent workspace feature.
-    def executeBuild() = {
+    def executeBuild = {
         stage('Checkout') {
             checkout scm
         }

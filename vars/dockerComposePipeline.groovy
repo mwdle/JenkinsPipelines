@@ -146,8 +146,7 @@ def call(Map config = [:]) {
     def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
-    // This closure defines the core teardown, build, and deploy logic, allowing it to be called
-    // conditionally with or without the Bitwarden environment wrapper.
+    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the Bitwarden environment wrapper.
     def composeStages = {
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
@@ -194,69 +193,51 @@ def call(Map config = [:]) {
         }
     }
 
-    node(agentLabel) {
+    // This closure defines the core build execution logic, allowing it to be called conditionally with or without the persistent workspace feature.
+    def executeBuild() = {
+        stage('Checkout') {
+            checkout scm
+        }
+        // If a post-checkout closure was provided, execute it
+        if (postCheckoutSteps) {
+            postCheckoutSteps()
+        }
+        if (params.USE_BITWARDEN) {
+            echo "Bitwarden integration enabled"
+            // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
+            withComposeSecrets(config) { composeStages() } 
+        } else {
+            echo "Bitwarden integration disabled"
+            composeStages()
+        }
+    }
 
+    node(agentLabel) {
         if (config.persistentWorkspace) {
             def repoName = env.JOB_NAME.split('/')[1]
             def appRoot = "${config.persistentWorkspace}/${repoName}"
             def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
-            stage('Checkout') {
-                checkout scm
-            }
-            // If a post-checkout closure was provided, execute it
-            if (postCheckoutSteps) {
-                postCheckoutSteps()
-            }
             try {
-                stage('Prepare Persistent Workspace') {
-                    echo "Preparing persistent workspace at: ${deploymentPath}"
-                    sh "mkdir -p ${deploymentPath}"
-                    sh "cp -a . ${deploymentPath}/"
-                }
-                // Run all subsequent stages from within the persistent workspace.
                 dir(deploymentPath) {
-                    if (params.USE_BITWARDEN) {
-                        echo "Bitwarden integration enabled"
-                        // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
-                        withComposeSecrets(config) { composeStages() } 
-                    } else {
-                        echo "Bitwarden integration disabled"
-                        composeStages()
-                    }
+                    executeBuild()
                 }
             } finally {
                 stage('Cleanup Old Deployments') {
-                    script {
-                        if (params.COMPOSE_DOWN) {
-                            echo "Cleaning up all persistent deployment folders for ${repoName}..."
-                            sh "rm -rf ${appRoot}"
-                        } else if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
-                            echo "Build was successful. Cleaning up old deployments..."
-                            dir(appRoot) {
-                                sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
-                            }
-                        } else {
-                            echo "Build failed. Skipping cleanup to preserve the last known-good deployment."
+                    if (params.COMPOSE_DOWN) {
+                        echo "Cleaning up all persistent deployment folders for ${repoName}..."
+                        sh "rm -rf ${appRoot}"
+                    } else if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+                        echo "Build was successful. Cleaning up old deployments..."
+                        dir(appRoot) {
+                            sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
                         }
+                    } else {
+                        echo "Build failed. Skipping cleanup to preserve the last known-good deployment."
                     }
                 }
             }
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
-            stage('Checkout') {
-                checkout scm
-            }
-            // If a post-checkout closure was provided, execute it
-            if (postCheckoutSteps) {
-                postCheckoutSteps()
-            }
-            if (params.USE_BITWARDEN) {
-                echo "Bitwarden integration enabled"
-                // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
-                withComposeSecrets(config) { composeStages() } 
-            } else {
-                echo "Bitwarden integration disabled"
-                composeStages()
-            }   
+            executeBuild()
         }
     }
 }

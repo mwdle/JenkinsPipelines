@@ -60,7 +60,7 @@ def call(Map config = [:], Closure body) {
                 error "Error: The Bitwarden item '${itemName}' contains no notes. Cannot proceed."
             }
             // Write to temporary .env file
-            def envFile = "${tmpdir}/${java.util.UUID.randomUUID()}.env"
+            def envFile = "${tmpdir}/${java.util.UUID.randomUUID()}"
             writeFile(file: envFile, text: credential.notes)
             envFiles.add(envFile)
         }

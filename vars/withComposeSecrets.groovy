@@ -1,5 +1,3 @@
-import java.nio.file.Paths
-
 /**
  * Wraps a block of code with a temporary environment sourced from Bitwarden.
  *
@@ -52,28 +50,24 @@ def call(Map config = [:], Closure body) {
     def bitwardenItemNames = config.bitwardenItems ?: [env.JOB_NAME.split('/')[1]]
     def envFiles = []
 
-    try {
-        // Fetch secrets from Bitwarden
-        withBitwarden(itemNames: bitwardenItemNames) { credentialsMap ->
-            credentialsMap.each { itemName, credential ->
-                if (!credential.notes.trim()) {
-                    error "Error: The Bitwarden item '${itemName}' contains no notes. Cannot proceed."
-                }
-                // Write to temporary .env file
-                def envFile = Paths.get(System.getProperty("java.io.tmpdir"), "${java.util.UUID.randomUUID()}.env").toString()
-                writeFile(file: envFile, text: credential.notes)
-                envFiles.add(envFile)
-            }
-        }
+    // Get a path to a temporary directory (outside of the current workspace) that Jenkins will clean up at the end of the build
+    def tmpdir = pwd(tmp: true)
 
-        // Execute the closure within the secret environment
-        withEnv(["COMPOSE_ENV_FILES=${envFiles.join(',')}"]) {
-            body()
+    // Fetch secrets from Bitwarden
+    withBitwarden(itemNames: bitwardenItemNames) { credentialsMap ->
+        credentialsMap.each { itemName, credential ->
+            if (!credential.notes.trim()) {
+                error "Error: The Bitwarden item '${itemName}' contains no notes. Cannot proceed."
+            }
+            // Write to temporary .env file
+            def envFile = "${tmpdir}/${java.util.UUID.randomUUID()}.env"
+            writeFile(file: envFile, text: credential.notes)
+            envFiles.add(envFile)
         }
-    } finally {
-        // Cleanup temporary files
-        envFiles.each { filePath ->
-            sh "rm -f '${filePath}'"
-        }
+    }
+
+    // Execute the closure within the secret environment
+    withEnv(["COMPOSE_ENV_FILES=${envFiles.join(',')}"]) {
+        body()
     }
 }

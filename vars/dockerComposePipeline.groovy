@@ -82,7 +82,7 @@ def call(Map config = [:]) {
     def agentLabel = config.agentLabel ?: 'docker'
     // Optional boolean Disables webhook and other build triggers if true
     def disableTriggers = config.disableTriggers ?: false
-    // Optional cron schedule string for periodic builds. Only applied if `disableTriggers` is false.
+    // Optional cron schedule string for periodic builds. Only applied if `disableTriggers` is false
     def cronSchedule = config.cronSchedule?.trim()
     // Optional closure for custom steps to run after checkout
     def postCheckoutSteps = config.postCheckoutSteps
@@ -146,7 +146,7 @@ def call(Map config = [:]) {
     def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
-    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the Bitwarden environment wrapper.
+    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the Bitwarden environment wrapper
     def composeStages = {
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
@@ -193,7 +193,7 @@ def call(Map config = [:]) {
         }
     }
 
-    // This closure defines the core build execution logic, allowing it to be called conditionally with or without the persistent workspace feature.
+    // This closure defines the core deployment logic, allowing it to be called conditionally with or without the persistent workspace feature
     def deploymentFlow = {
         stage('Checkout') {
             checkout scm

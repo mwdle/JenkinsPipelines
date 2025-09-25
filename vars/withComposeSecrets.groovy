@@ -47,7 +47,7 @@ def call(Map config = [:], Closure body) {
     library 'JenkinsBitwardenUtils' // See https://github.com/mwdle/JenkinsBitwardenUtils
 
     // Default to repo name if no bitwardenItems specified
-    def bitwardenItemNames = config.bitwardenItems ?: [env.JOB_NAME.split('/')[1]]
+    def bitwardenItemNames = config.bitwardenItems ?: ["${env.JOB_NAME.split('/')[1]}.env"]
     def envFiles = []
 
     // Get a path to a temporary directory (outside of the current workspace) that Jenkins will clean up at the end of the build

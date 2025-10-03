@@ -199,7 +199,7 @@ def call(Map config = [:]) {
             def defaultCredentialId = env.JOB_NAME.split('/')[1]
             def credentialIdsToUse = config.envFileCredentialIds ?: [defaultCredentialId]
             echo "Attempting to inject .env file(s) from Jenkins credentials: ${credentialIdsToUse}"
-            def credentialBindings = credentialIdsToUse.collectWithIndex { credId, i ->
+            def credentialBindings = credentialIdsToUse.withIndex().collect { credId, i ->
                 file(credentialsId: credId, variable: "SECRET_FILE_${i}")
             }
             withCredentials(credentialBindings) {

@@ -1,11 +1,6 @@
 /*
  * A flexible, multi-option pipeline for managing Docker Compose applications.
  *
- * --- Prerequisite ---
- *
- * The `JenkinsBitwardenUtils` library must be configured in Jenkins as a global shared library (Manage Jenkins → Configure System).
- * See: https://github.com/mwdle/JenkinsBitwardenUtils
- *
  * --- A Note on Compose Project Naming ---
  *
  * It is STRONGLY RECOMMENDED to define a static project name in your `docker-compose.yml` (e.g. `name: someProjectName`) or an `.env` file (e.g., `COMPOSE_PROJECT_NAME=my-app`). 
@@ -17,7 +12,7 @@
  * This pipeline can be customized with a post-checkout hook. By providing a closure to the `postCheckoutSteps` parameter, you can perform any custom
  * preparatory steps immediately after the source code is checked out. This code executes within the `Checkout` stage. For example this could be a git checkout of a dependency into the workspace.
  *
- * --- Using Secrets with Bitwarden ---
+ * --- Providing Secrets via .env ---
  *
  * To use this feature correctly, it's important to understand the two ways Docker Compose uses environment files:
  *
@@ -26,11 +21,8 @@
  *
  * 2. For Container Environments: The `env_file:` directive loads variables from a file directly into that specific container for your application to use at runtime.
  *
- * This pipeline feature uses the first method ONLY. It fetches your Bitwarden note and provides its contents to Docker Compose for variable substitution.
- * Because of this, you CANNOT use the `env_file:` directive to load secrets from Bitwarden, as the pipeline does not place a physical file in your workspace for that purpose.
-
- * For maximum security, it is highly recommended to run this pipeline on ephemeral Jenkins agents (e.g., containers).
- * This ensures the temporary secret file is always destroyed along with the agent's filesystem after the build, providing an absolute guarantee of cleanup.
+ * This pipeline feature uses the first method ONLY. It fetches your `.env` from a Jenkins File Credential and provides its contents to Docker Compose for variable substitution.
+ * Because of this, you CANNOT use the `env_file:` directive to load a `.env` file, as the pipeline does not place a physical file in your workspace for that purpose.
  *
  * --- Security Advisory (CWE-209) ---
  *
@@ -38,7 +30,7 @@
  * The `docker compose` commands used throughout this pipeline can leak sensitive environment variables into the build logs via their verbose error messages.
  *
  * An actor with commit access to a repository using this pipeline could deliberately craft a malformed `compose.yaml` to intentionally trigger a descriptive validation error,
- * e.g., during a `docker compose up` command, causing a secret to be printed in the log.
+ * e.g., during a `docker compose up` command, causing a secret from .env to be printed in the log.
  *
  * The primary mitigation for this is organizational, not technical:
  * 1. Enforce code reviews on all changes to `compose.yaml`.
@@ -73,7 +65,6 @@
  *
  * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g., Linux, macOS). The following tools are required on the agent:
  * - `sh` (Bourne shell)
- * - Bitwarden CLI (`bw`) -- see `./withComposeSecrets.groovy` (used when config.defaultBitwardenEnabled is true)
  * - `git`
  */
 def call(Map config = [:]) {
@@ -101,8 +92,8 @@ def call(Map config = [:]) {
     def defaultTargetServices = config.defaultTargetServices ?: ''
     // Configurable default for the 'LOG_TAIL_COUNT' pipeline parameter
     def defaultLogTailCount = (config.defaultLogTailCount ?: '0').toString() // Handle potential null with a default before calling .toString()
-    // Configurable default for the 'USE_BITWARDEN' pipeline parameter
-    def defaultBitwardenEnabled = config.defaultBitwardenEnabled ?: false
+    // Configurable default for the 'USE_SECRETS' pipeline parameter
+    def defaultUseSecrets = config.defaultUseSecrets ?: false
 
     // Define and apply job properties and parameters
     def jobProperties = [
@@ -114,7 +105,7 @@ def call(Map config = [:]) {
             booleanParam(name: 'PULL_IMAGES', defaultValue: defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
             stringParam(name: 'LOG_TAIL_COUNT', defaultValue: defaultLogTailCount, description: 'Option: Number of log lines to show after deployment.'),
-            booleanParam(name: 'USE_BITWARDEN', defaultValue: defaultBitwardenEnabled, description: 'Option: Fetch Bitwarden secure note(s) containing Docker Compose .env files (the specific item(s) to fetch are defined in the Jenkinsfile) and inject them into Docker Compose for substitution. Requires JenkinsBitwardenUtils library configured in Jenkins.')
+            booleanParam(name: 'USE_SECRETS', defaultValue: defaultUseSecrets, description: 'Option: Inject .env file from Jenkins "Secret file" credential(s).')
         ])
     ]
 
@@ -146,7 +137,7 @@ def call(Map config = [:]) {
     def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
-    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the Bitwarden environment wrapper
+    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the secret injection feature.
     def composeStages = {
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
@@ -202,12 +193,25 @@ def call(Map config = [:]) {
         if (postCheckoutSteps) {
             postCheckoutSteps()
         }
-        if (params.USE_BITWARDEN) {
-            echo "Bitwarden integration enabled"
-            // Wraps a closure with a temporary Docker Compose `.env` loaded from Bitwarden secure notes -- see `./withComposeSecrets.groovy`
-            withComposeSecrets(config) { composeStages() } 
+        if (params.USE_SECRETS) {
+            echo "Secrets integration enabled."
+            // Determine the credential ID(s) to use. Default to the repository/job name if not specified in the config.
+            def defaultCredentialId = env.JOB_NAME.split('/')[1]
+            def credentialIdsToUse = config.envFileCredentialIds ?: [defaultCredentialId]
+            echo "Attempting to inject .env file(s) from Jenkins credentials: ${credentialIdsToUse}"
+            def credentialBindings = credentialIds.collectWithIndex { credId, i ->
+                file(credentialsId: credId, variable: "SECRET_FILE_${i}")
+            }
+            withCredentials(credentialBindings) {
+                def secretFilePaths = (0..<credentialIds.size()).collect { i ->
+                    env."SECRET_FILE_${i}"
+                }
+                withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
+                    composeStages()
+                }
+            }
         } else {
-            echo "Bitwarden integration disabled"
+            echo "Secrets integration disabled."
             composeStages()
         }
     }

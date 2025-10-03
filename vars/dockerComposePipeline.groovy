@@ -92,8 +92,6 @@ def call(Map config = [:]) {
     def defaultTargetServices = config.defaultTargetServices ?: ''
     // Configurable default for the 'LOG_TAIL_COUNT' pipeline parameter
     def defaultLogTailCount = (config.defaultLogTailCount ?: '0').toString() // Handle potential null with a default before calling .toString()
-    // Configurable default for the 'USE_SECRETS' pipeline parameter
-    def defaultUseSecrets = config.defaultUseSecrets ?: false
 
     // Define and apply job properties and parameters
     def jobProperties = [
@@ -104,8 +102,7 @@ def call(Map config = [:]) {
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
-            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: defaultLogTailCount, description: 'Option: Number of log lines to show after deployment.'),
-            booleanParam(name: 'USE_SECRETS', defaultValue: defaultUseSecrets, description: 'Option: Inject .env file from Jenkins "Secret file" credential(s).')
+            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: defaultLogTailCount, description: 'Option: Number of log lines to show after deployment.')
         ])
     ]
 
@@ -193,24 +190,16 @@ def call(Map config = [:]) {
         if (postCheckoutSteps) {
             postCheckoutSteps()
         }
-        if (params.USE_SECRETS) {
+        if (config.envFileCredentialIds) {
             echo "Secrets integration enabled."
-            // Determine the credential ID(s) to use. Default to the repository/job name if not specified in the config.
-            def defaultCredentialId = env.JOB_NAME.split('/')[1]
-            def credentialIdsToUse = config.envFileCredentialIds ?: [defaultCredentialId]
-            echo "Attempting to inject .env file(s) from Jenkins credentials: ${credentialIdsToUse}"
-            def credentialBindings = []
-            credentialIdsToUse.eachWithIndex { credId, i ->
-                credentialBindings << file(credentialsId: credId, variable: "SECRET_FILE_${i}")
+        withCredentials(config.envFileCredentialIds.collectWithIndex { credId, i ->
+            file(credentialsId: credId, variable: "SECRET_FILE_${i}")
+        }) {
+            def secretFilePaths = (0..<config.envFileCredentialIds.size()).collect { i -> env."SECRET_FILE_${i}" }
+            withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
+                composeStages()
             }
-            withCredentials(credentialBindings) {
-                def secretFilePaths = (0..<credentialBindings.size()).collect { i ->
-                    env."SECRET_FILE_${i}"
-                }
-                withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
-                    composeStages()
-                }
-            }
+        }
         } else {
             echo "Secrets integration disabled."
             composeStages()

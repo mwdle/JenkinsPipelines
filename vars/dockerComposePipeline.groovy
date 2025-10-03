@@ -192,14 +192,16 @@ def call(Map config = [:]) {
         }
         if (config.envFileCredentialIds) {
             echo "Secrets integration enabled."
-        withCredentials(config.envFileCredentialIds.collectWithIndex { credId, i ->
-            file(credentialsId: credId, variable: "SECRET_FILE_${i}")
-        }) {
-            def secretFilePaths = (0..<config.envFileCredentialIds.size()).collect { i -> env."SECRET_FILE_${i}" }
-            withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
-                composeStages()
+            withCredentials(
+                (0..<config.envFileCredentialIds.size()).collect { i ->
+                    file(credentialsId: config.envFileCredentialIds[i], variable: "SECRET_FILE_${i}")
+                }
+            ) {
+                def secretFilePaths = (0..<config.envFileCredentialIds.size()).collect { i -> env."SECRET_FILE_${i}"}
+                withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
+                    composeStages()
+                }
             }
-        }
         } else {
             echo "Secrets integration disabled."
             composeStages()

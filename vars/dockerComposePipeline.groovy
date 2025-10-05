@@ -134,49 +134,65 @@ def call(Map config = [:]) {
     def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
-    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the secret injection feature.
-    def composeStages = {
+    /**
+     * Helper to run a docker compose command.
+     * @param args The docker compose arguments (e.g., 'up -d').
+     * @param envFileOpts A string containing all the --env-file options, or empty.
+     */
+    def dockerCompose(String args, String envFileOpts = '') {
+        def commandString = "docker compose ${envFileOpts}"
+        // The 'config' command does not accept service names.
+        if (args.startsWith('config')) {
+            commandString += " ${args}"
+        } else {
+            commandString += " ${args} ${targetServices}"
+        }
+        sh(commandString)
+    }
+
+    // This closure defines the core teardown, build, and deploy logic.
+    def composeStages = { String envFileOpts = '' ->
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
-            sh "docker compose config --quiet"
+            dockerCompose("config --quiet", envFileOpts)
         }
         if (params.COMPOSE_DOWN) {
             stage('Teardown') {
                 echo "=== Tearing Down Services ==="
-                sh "docker compose down ${targetServices}"
+                dockerCompose("down", envFileOpts)
             }
             return // Exit
         }
         if (params.COMPOSE_RESTART) {
             stage('Restart') {
                 echo "=== Restarting Services ==="
-                sh "docker compose restart ${targetServices}"
+                dockerCompose("restart", envFileOpts)
             }
             return // Exit
         }
         if (params.COMPOSE_BUILD) {
             stage('Build') {
                 echo "=== Building Docker Images ==="
-                sh "docker compose build ${targetServices}"
+                dockerCompose("build", envFileOpts)
             }
         }
         stage('Deploy') {
             echo "=== Deploying Services ==="
             if (params.FORCE_RECREATE) {
                 echo 'Force recreate requested. Executing `docker compose down` before redeploy.'
-                sh "docker compose down ${targetServices}"
+                dockerCompose("down", envFileOpts)
             }
             if (params.PULL_IMAGES) {
                 echo "Pulling latest images."
-                sh "docker compose pull --ignore-pull-failures ${targetServices}"
+                dockerCompose("pull --ignore-pull-failures", envFileOpts)
             }
-            sh "docker compose up -d ${targetServices}"
+            dockerCompose("up -d", envFileOpts)
             echo "Deployment status:"
-            sh "docker compose ps ${targetServices}"
+            dockerCompose("ps", envFileOpts)
             if (logTailCount > 0) {
                 sleep 3 // Short sleep to give logs time to populate
                 echo "--> Showing last ${logTailCount} log lines:"
-                sh "docker compose logs --tail=${logTailCount} ${targetServices}"
+                dockerCompose("logs --tail=${logTailCount}", envFileOpts)
             }
         }
     }
@@ -192,15 +208,16 @@ def call(Map config = [:]) {
         }
         if (config.envFileCredentialIds) {
             echo "Secrets integration enabled."
-            withCredentials(
-                (0..<config.envFileCredentialIds.size()).collect { i ->
-                    file(credentialsId: config.envFileCredentialIds[i], variable: "SECRET_FILE_${i}")
-                }
-            ) {
-                def secretFilePaths = (0..<config.envFileCredentialIds.size()).collect { i -> env."SECRET_FILE_${i}"}
-                withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
-                    composeStages()
-                }
+            def credentialBindings = []
+            config.envFileCredentialIds.eachWithIndex { credId, i ->
+                def variableName = "COMPOSE_ENV_${i}"
+                credentialBindings.add(file(credentialsId: credId, variable: variableName))
+            }
+            withCredentials(credentialBindings) {
+                def envFileOpts = (0..<config.envFileCredentialIds.size()).collect { i ->
+                    ' --env-file $COMPOSE_ENV_' + i
+                }.join(' ')
+                composeStages(envFileOpts)
             }
         } else {
             echo "Secrets integration disabled."

@@ -144,7 +144,7 @@ def call(Map config = [:]) {
     * 
     * Special case: 'config' does not accept service names and is handled separately.
     */
-    dockerCompose = { String args, String envFileOpts = '' ->
+    def dockerCompose = { String args, String envFileOpts = '' ->
         def commandString = "docker compose ${envFileOpts}"
         // The 'config' command does not accept service names.
         if (args.startsWith('config')) {

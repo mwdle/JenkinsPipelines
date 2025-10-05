@@ -34,7 +34,8 @@
  *     @Library("JenkinsPipelines") _
  *     dockerComposePipeline(
  *         envFileCredentialIds: [
- *             env.JOB_NAME.split('/')[1] // For organization folders, this uses the repository name as the credential ID to fetch.
+ *             'my-app-secrets',       // Provide your Jenkins credential ID(s) here
+ *             'common-database-creds'
  *         ],
  *         persistentWorkspace: "${System.getenv('DOCKER_VOLUMES')}/deployments"
  *     )
@@ -239,7 +240,7 @@ def call(Map config = [:]) {
             }
             withCredentials(credentialBindings) {
                 def envFileOpts = (0..<config.envFileCredentialIds.size()).collect { i ->
-                    ' --env-file $COMPOSE_ENV_' + i
+                    '--env-file $COMPOSE_ENV_' + i
                 }.join(' ')
                 composeStages(envFileOpts)
             }

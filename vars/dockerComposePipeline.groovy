@@ -14,15 +14,34 @@
  *
  * --- Providing Secrets via .env ---
  *
- * To use this feature correctly, it's important to understand the two ways Docker Compose uses environment files:
+ * Docker Compose supports environment files in two ways:
  *
- * 1. For Variable Substitution: Docker Compose looks for a default `.env` file in your project root.
- *    It uses these variables to substitute values inside the `docker-compose.yml` file itself (e.g., replacing `${IMAGE_TAG}`).
+ * 1. Variable Substitution: Docker Compose looks for a default `.env` file in your project root.
+ *    It uses these variables to substitute values inside the `docker-compose.yml` file itself
+ *    (e.g., replacing `${IMAGE_TAG}`).
  *
- * 2. For Container Environments: The `env_file:` directive loads variables from a file directly into that specific container for your application to use at runtime.
+ * 2. Container Environments: The `env_file:` directive loads variables from a file directly into the container.
  *
- * This pipeline feature uses the first method ONLY. It fetches your `.env` from a Jenkins File Credential and provides its contents to Docker Compose for variable substitution.
- * Because of this, you CANNOT use the `env_file:` directive to load a `.env` file, as the pipeline does not place a physical file in your workspace for that purpose.
+ * This pipeline uses the first method ONLY. It fetches `.env` files from Jenkins File Credentials
+ * and provides their contents to Docker Compose for variable substitution.
+ * These `.env` files are **not** written permanently to disk, so `env_file:` cannot be used for this feature.
+ *
+ * To inject `.env` files at runtime, pass a list of Jenkins file credential IDs in the `config` map
+ * under the `envFileCredentialIds` key.
+ *
+ * Example usage in your Jenkinsfile:
+ *
+ *     @Library("JenkinsPipelines") _
+ *     dockerComposePipeline(
+ *         envFileCredentialIds: [
+ *             env.JOB_NAME.split('/')[1] // For organization folders, this uses the repository name as the credential ID to fetch.
+ *         ],
+ *         persistentWorkspace: "${System.getenv('DOCKER_VOLUMES')}/deployments"
+ *     )
+ *
+ * Requirements:
+ * - Each credential ID must reference a Jenkins "File" credential.
+ * - The credential file must be a valid `.env` format file.
  *
  * --- Security Advisory (CWE-209) ---
  *

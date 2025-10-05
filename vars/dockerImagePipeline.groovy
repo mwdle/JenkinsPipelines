@@ -1,19 +1,8 @@
 /*
- * A flexible pipeline for building and pushing Docker images.
+ * Docker Image Pipeline for Jenkins
  *
- * --- Important Jenkins Behavior ---
- *
- * Changes to build parameters defined in this Jenkinsfile are not applied instantly.
- * A build must run with the new code for any changes to default parameter values
- * to take full effect in the Jenkins UI for subsequent builds.
- *
- * --- System Requirements ---
- *
- * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g.,
- * Linux, macOS). The following tools are required on the agent:
- * - `sh` (Bourne shell)
- * - `docker`
- * - `git`
+ * This pipeline library automates building and pushing Docker images inside Jenkins.
+ * Full usage instructions, configuration options, and examples are in the README.
  */
 def call(Map config = [:]) {
 

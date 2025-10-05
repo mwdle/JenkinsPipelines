@@ -135,11 +135,16 @@ def call(Map config = [:]) {
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
     /**
-     * Helper to run a docker compose command.
-     * @param args The docker compose arguments (e.g., 'up -d').
-     * @param envFileOpts A string containing all the --env-file options, or empty.
-     */
-    def dockerCompose(String args, String envFileOpts = '') {
+    * Runs a docker compose command with optional environment file overrides.
+    *
+    * @param args Docker compose arguments — a single string that can contain multiple arguments 
+    *             (e.g., 'up -d', 'logs --tail=50').
+    * @param envFileOpts Zero or more space-separated `--env-file` options 
+    *                    (e.g., '--env-file .env --env-file secrets.env').
+    * 
+    * Special case: 'config' does not accept service names and is handled separately.
+    */
+    dockerCompose = { String args, String envFileOpts = '' ->
         def commandString = "docker compose ${envFileOpts}"
         // The 'config' command does not accept service names.
         if (args.startsWith('config')) {

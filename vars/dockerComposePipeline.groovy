@@ -1,71 +1,8 @@
 /*
- * A flexible, multi-option pipeline for managing Docker Compose applications.
+ * Docker Compose Pipeline for Jenkins
  *
- * --- A Note on Compose Project Naming ---
- *
- * It is STRONGLY RECOMMENDED to define a static project name in your `docker-compose.yml` (e.g. `name: someProjectName`) or an `.env` file (e.g., `COMPOSE_PROJECT_NAME=my-app`). 
- * Docker uses the folder name by default and Jenkins workspace directory names are not guaranteed to be consistent. 
-* A static name ensures that a running this pipeline correctly updates an existing deployment, rather than creating a new, parallel stack.
- *
- * --- Customization ---
- *
- * This pipeline can be customized with a post-checkout hook. By providing a closure to the `postCheckoutSteps` parameter, you can perform any custom
- * preparatory steps immediately after the source code is checked out. This code executes within the `Checkout` stage. For example this could be a git checkout of a dependency into the workspace.
- *
- * --- Providing Secrets via .env ---
- *
- * To use this feature correctly, it's important to understand the two ways Docker Compose uses environment files:
- *
- * 1. For Variable Substitution: Docker Compose looks for a default `.env` file in your project root.
- *    It uses these variables to substitute values inside the `docker-compose.yml` file itself (e.g., replacing `${IMAGE_TAG}`).
- *
- * 2. For Container Environments: The `env_file:` directive loads variables from a file directly into that specific container for your application to use at runtime.
- *
- * This pipeline feature uses the first method ONLY. It fetches your `.env` from a Jenkins File Credential and provides its contents to Docker Compose for variable substitution.
- * Because of this, you CANNOT use the `env_file:` directive to load a `.env` file, as the pipeline does not place a physical file in your workspace for that purpose.
- *
- * --- Security Advisory (CWE-209) ---
- *
- * This pipeline is vulnerable to an "Information Exposure Through Error Message" attack.
- * The `docker compose` commands used throughout this pipeline can leak sensitive environment variables into the build logs via their verbose error messages.
- *
- * An actor with commit access to a repository using this pipeline could deliberately craft a malformed `compose.yaml` to intentionally trigger a descriptive validation error,
- * e.g., during a `docker compose up` command, causing a secret from .env to be printed in the log.
- *
- * The primary mitigation for this is organizational, not technical:
- * 1. Enforce code reviews on all changes to `compose.yaml`.
- * 2. Strictly limit commit and/or Jenkins Job access using the principle of least privilege.
- *
- * --- Persisting the Workspace on the Host (for Relative Bind Mounts) ---
- *
- * This pipeline can run `docker compose` as if it were on the host, which is necessary for `docker-compose.yml` files that use relative bind mounts (`./some-file`).
- * To enable this mode, you must do two things:
- *
- * 1. CONFIGURE THE AGENT: The directory where your deployments will live MUST be bind-mounted from the host into the Jenkins agent container with an identical ("mirrored") path. 
- * For example, in JCasC agent template configuration: `type=bind,source=/opt/AppData,destination=/opt/AppData`
- *
- * 2. SET THE DEPLOYMENT FOLDER: In your Jenkinsfile, set the `persistentWorkspace` parameter to the path you just configured.
- * The pipeline will create its own project-specific subdirectories inside this folder.
- * Example: `persistentWorkspace: '/opt/AppData'`
- *
- * **!!! WARNING !!!**
- * The path provided for `persistentWorkspace` MUST be a directory dedicated exclusively to deployments.
- * The pipeline's cleanup process will automatically and forcefully delete subdirectories within this path.
- * DO NOT point this to a directory containing other important data.
- *
- * --- Important Jenkins Behavior ---
- *
- * Changes to job properties (like build parameter defaults or triggers configured in the Jenkinsfile) are not applied instantly. A build must run with the new code for these configuration changes to take full effect.
- *
- * For example:
- * - To DISABLE triggers: Push `disableTriggers: true`. One final auto-build will run, after which triggers will be off.
- * - To RE-ENABLE triggers: Push `disableTriggers: false`, then run one MANUAL build to reactivate automatic triggers.
- *
- * --- System Requirements ---
- *
- * This pipeline is designed for and tested on Unix-like Jenkins agents (e.g., Linux, macOS). The following tools are required on the agent:
- * - `sh` (Bourne shell)
- * - `git`
+ * This pipeline library automates Docker Compose deployments inside Jenkins.
+ * Full usage instructions, configuration options, and examples are in the README.
  */
 def call(Map config = [:]) {
 
@@ -134,54 +71,72 @@ def call(Map config = [:]) {
     def targetServices = params.TARGET_SERVICES
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
 
-    // This closure defines the core teardown, build, and deploy logic, allowing it to be called conditionally with or without the secret injection feature.
-    def composeStages = {
+    /**
+    * Runs a docker compose command with optional environment file overrides.
+    */
+    def dockerCompose = { String args, String envFileOpts = '' ->
+        def commandString = "docker compose ${envFileOpts}"
+        // The 'config' command does not accept service names.
+        if (args.startsWith('config')) {
+            commandString += " ${args}"
+        } else {
+            commandString += " ${args} ${targetServices}"
+        }
+        sh(commandString)
+    }
+
+    /**
+    * Defines the core teardown, build, and deploy logic.
+    */
+    def composeStages = { String envFileOpts = '' ->
         stage('Validate') {
             echo "=== Validating Docker Compose Configuration ==="
-            sh "docker compose config --quiet"
+            dockerCompose("config --quiet", envFileOpts)
         }
         if (params.COMPOSE_DOWN) {
             stage('Teardown') {
                 echo "=== Tearing Down Services ==="
-                sh "docker compose down ${targetServices}"
+                dockerCompose("down", envFileOpts)
             }
             return // Exit
         }
         if (params.COMPOSE_RESTART) {
             stage('Restart') {
                 echo "=== Restarting Services ==="
-                sh "docker compose restart ${targetServices}"
+                dockerCompose("restart", envFileOpts)
             }
             return // Exit
         }
         if (params.COMPOSE_BUILD) {
             stage('Build') {
                 echo "=== Building Docker Images ==="
-                sh "docker compose build ${targetServices}"
+                dockerCompose("build", envFileOpts)
             }
         }
         stage('Deploy') {
             echo "=== Deploying Services ==="
             if (params.FORCE_RECREATE) {
                 echo 'Force recreate requested. Executing `docker compose down` before redeploy.'
-                sh "docker compose down ${targetServices}"
+                dockerCompose("down", envFileOpts)
             }
             if (params.PULL_IMAGES) {
                 echo "Pulling latest images."
-                sh "docker compose pull --ignore-pull-failures ${targetServices}"
+                dockerCompose("pull --ignore-pull-failures", envFileOpts)
             }
-            sh "docker compose up -d ${targetServices}"
+            dockerCompose("up -d", envFileOpts)
             echo "Deployment status:"
-            sh "docker compose ps ${targetServices}"
+            dockerCompose("ps", envFileOpts)
             if (logTailCount > 0) {
                 sleep 3 // Short sleep to give logs time to populate
                 echo "--> Showing last ${logTailCount} log lines:"
-                sh "docker compose logs --tail=${logTailCount} ${targetServices}"
+                dockerCompose("logs --tail=${logTailCount}", envFileOpts)
             }
         }
     }
 
-    // This closure defines the core deployment logic, allowing it to be called conditionally with or without the persistent workspace feature
+    /**
+    * Defines the core deployment logic, allowing it to be called conditionally with or without the persistent workspace feature.
+    */
     def deploymentFlow = {
         stage('Checkout') {
             checkout scm
@@ -192,15 +147,16 @@ def call(Map config = [:]) {
         }
         if (config.envFileCredentialIds) {
             echo "Secrets integration enabled."
-            withCredentials(
-                (0..<config.envFileCredentialIds.size()).collect { i ->
-                    file(credentialsId: config.envFileCredentialIds[i], variable: "SECRET_FILE_${i}")
-                }
-            ) {
-                def secretFilePaths = (0..<config.envFileCredentialIds.size()).collect { i -> env."SECRET_FILE_${i}"}
-                withEnv(["COMPOSE_ENV_FILES=${secretFilePaths.join(',')}"]) {
-                    composeStages()
-                }
+            def credentialBindings = []
+            config.envFileCredentialIds.eachWithIndex { credId, i ->
+                def variableName = "COMPOSE_ENV_${i}"
+                credentialBindings.add(file(credentialsId: credId, variable: variableName))
+            }
+            withCredentials(credentialBindings) {
+                def envFileOpts = (0..<config.envFileCredentialIds.size()).collect { i ->
+                    '--env-file $COMPOSE_ENV_' + i
+                }.join(' ')
+                composeStages(envFileOpts)
             }
         } else {
             echo "Secrets integration disabled."

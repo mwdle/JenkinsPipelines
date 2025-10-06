@@ -46,7 +46,8 @@ Docker Compose supports environment variables in two ways:
 1. **Variable Substitution:** Docker Compose uses a default `.env` file in your project root to replace `${VAR}` in the compose file.
 2. **Container Environments:** The `env_file:` directive loads variables directly into containers.
 
-This pipeline uses **Variable Substitution** only. `.env` files are fetched from Jenkins File Credentials and are **not** permanently written to disk, so `env_file:` cannot be used directly.
+The pipeline securely provides environment files to Docker Compose at runtime using the --env-file flag. These files are sourced directly from Jenkins credentials and are never written to the workspace.
+This means that the secret injection does not support the `env_file:` directive within `docker-compose.yml` files.
 
 **To inject `.env` files at runtime**, pass a list of Jenkins file credential IDs via the `envFileCredentialIds` config key.
 
@@ -153,23 +154,31 @@ dockerComposePipeline(
 
 ## Persistent Workspace Setup
 
-To support relative bind mounts (`./file`) in your `docker-compose.yml`:
+To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, the path to your deployment directory must exist on both the Jenkins agent container and the Docker host.
 
-1. **Configure Jenkins Agent:** Bind mount the deployment directory with identical paths.  
-   Example JCasC agent template:
+1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure the agent template to bind mount the deployment directory from the host to the agent, ensuring the source and destination paths are identical.
 
-   ```yaml
-   type=bind,source=/opt/AppData,destination=/opt/AppData
-   ```
+    *Example JCasC agent template:*
 
-2. **Set Persistent Workspace:** In your Jenkinsfile:
+    ```yaml
+    clouds:
+      - docker:
+          templates:
+            - labelString: "docker"
+              # ... other agent config ...
+              mountsString: |-
+                type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
+                type=bind,source=/opt/AppData,destination=/opt/AppData
+    ```
 
-   ```groovy
-   persistentWorkspace: '/opt/AppData'
-   ```
+2. **Set Persistent Workspace:** In your Jenkinsfile, set the `persistentWorkspace` parameter to the same path used in the agent configuration.
+
+    ```groovy
+    persistentWorkspace: '/opt/AppData'
+    ```
 
 > [!WARNING]
-> The persistent workspace path must be dedicated to deployments. The pipeline will **delete old deployment folders** in this path.
+> The persistent workspace path must be dedicated to deployments. The pipeline will **delete old deployment folders** in this path to clean up after successful runs.
 
 ---
 

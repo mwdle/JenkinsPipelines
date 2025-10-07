@@ -49,7 +49,7 @@ def call(Map parameters = [:]) {
                 if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
                     cleanupPersistentWorkspace(appRoot, repoName)
                 } else {
-                    echo "Build failed with status: ${currentBuild.result}. Skipping workspace cleanup."
+                    echo "Build failed with status: ${currentBuild.result}. Skipping cleanup to preserve the last known-good deployment."
                 }
             }
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
@@ -193,13 +193,11 @@ private void cleanupPersistentWorkspace(String appRoot, String repoName) {
         if (params.COMPOSE_DOWN) {
             echo "Cleaning up all persistent deployment folders for ${repoName}..."
             sh "rm -rf ${appRoot}"
-        } else if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+        } else {
             echo "Build was successful. Cleaning up old deployments..."
             dir(appRoot) {
                 sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
             }
-        } else {
-            echo "Build failed. Skipping cleanup to preserve the last known-good deployment."
         }
     }
 }

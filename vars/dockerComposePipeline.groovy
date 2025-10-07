@@ -46,7 +46,11 @@ def call(Map parameters = [:]) {
                     deploymentFlow(config)
                 }
             } finally {
-                cleanupPersistentWorkspace(appRoot, repoName)
+                if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+                    cleanupPersistentWorkspace(appRoot, repoName)
+                } else {
+                    echo "Build failed with status: ${currentBuild.result}. Skipping workspace cleanup."
+                }
             }
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
             deploymentFlow(config)

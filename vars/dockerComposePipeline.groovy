@@ -17,6 +17,7 @@ def call(Map parameters = [:]) {
         defaultComposeRestart: false,
         defaultForceRecreate:  false,
         defaultComposeBuild:   false,
+        defaultNoCache:        false,
         defaultPullImages:     false,
         defaultTargetServices: '',
         defaultLogTailCount:   '0'
@@ -68,6 +69,7 @@ private void setupJobProperties(Map config) {
             booleanParam(name: 'COMPOSE_RESTART', defaultValue: config.defaultComposeRestart, description: 'Action: Restart services and then exit the pipeline.'),
             booleanParam(name: 'FORCE_RECREATE', defaultValue: config.defaultForceRecreate, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: config.defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
+            booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Modifier: Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: config.defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
             stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after deployment.')
@@ -148,7 +150,12 @@ private void composeStages(String envFileOpts = '') {
         if (params.COMPOSE_BUILD) {
             stage('Build') {
                 echo "=== Building Docker Images ==="
-                dockerCompose("build", envFileOpts)
+                def buildArgs = "build"
+                if (params.NO_CACHE) {
+                    echo "Cache disabled for this build."
+                    buildArgs += " --no-cache"
+                }
+                dockerCompose(buildArgs, envFileOpts)
             }
         }
         stage('Deploy') {

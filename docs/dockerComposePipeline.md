@@ -96,15 +96,16 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 ## Pipeline Parameters Cheatsheet
 
-| Parameter         | Type    | Description                                        |
-| ----------------- | ------- | -------------------------------------------------- |
-| `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.               |
-| `COMPOSE_RESTART` | Boolean | Restart services, then exit.                       |
-| `FORCE_RECREATE`  | Boolean | Force redeployment by running `down` before `up`.  |
-| `COMPOSE_BUILD`   | Boolean | Build images before deploying.                     |
-| `PULL_IMAGES`     | Boolean | Pull latest images before deploying.               |
-| `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`). |
-| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after deployment.      |
+| Parameter         | Type    | Description                                                                    |
+| ----------------- | ------- | ------------------------------------------------------------------------------ |
+| `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.                                           |
+| `COMPOSE_RESTART` | Boolean | Restart services, then exit.                                                   |
+| `FORCE_RECREATE`  | Boolean | Force redeployment by running `down` before `up`.                              |
+| `COMPOSE_BUILD`   | Boolean | Build images before deploying.                                                 |
+| `NO_CACHE`        | Boolean | Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled. |
+| `PULL_IMAGES`     | Boolean | Pull latest images before deploying.                                           |
+| `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`).                             |
+| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after deployment.                                  |
 
 ### Config Map Parameters (Jenkinsfile)
 
@@ -118,6 +119,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | `defaultComposeRestart` | Boolean      | Default value for `COMPOSE_RESTART`.          |
 | `defaultForceRecreate`  | Boolean      | Default value for `FORCE_RECREATE`.           |
 | `defaultComposeBuild`   | Boolean      | Default value for `COMPOSE_BUILD`.            |
+| `defaultNoCache`        | Boolean      | Default value for `NO_CACHE`.                 |
 | `defaultPullImages`     | Boolean      | Default value for `PULL_IMAGES`.              |
 | `defaultTargetServices` | String       | Default value for `TARGET_SERVICES`.          |
 | `defaultLogTailCount`   | String       | Default value for `LOG_TAIL_COUNT`.           |
@@ -158,24 +160,24 @@ To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, th
 
 1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure the agent template to bind mount the deployment directory from the host to the agent, ensuring the source and destination paths are identical.
 
-    *Example JCasC agent template:*
+   _Example JCasC agent template:_
 
-    ```yaml
-    clouds:
-      - docker:
-          templates:
-            - labelString: "docker"
-              # ... other agent config ...
-              mountsString: |-
-                type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
-                type=bind,source=/opt/AppData,destination=/opt/AppData
-    ```
+   ```yaml
+   clouds:
+     - docker:
+         templates:
+           - labelString: "docker"
+             # ... other agent config ...
+             mountsString: |-
+               type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
+               type=bind,source=/opt/AppData,destination=/opt/AppData
+   ```
 
 2. **Set Persistent Workspace:** In your Jenkinsfile, set the `persistentWorkspace` parameter to the same path used in the agent configuration.
 
-    ```groovy
-    persistentWorkspace: '/opt/AppData'
-    ```
+   ```groovy
+   persistentWorkspace: '/opt/AppData'
+   ```
 
 > [!WARNING]
 > The persistent workspace path must be dedicated to deployments. The pipeline will **delete old deployment folders** in this path to clean up after successful runs.
@@ -209,6 +211,7 @@ dockerComposePipeline(
     defaultComposeRestart: false,
     defaultForceRecreate: false,
     defaultComposeBuild: true,
+    defaultNoCache: false,
     defaultPullImages: true,
     defaultTargetServices: "web api db",
     defaultLogTailCount: "50",

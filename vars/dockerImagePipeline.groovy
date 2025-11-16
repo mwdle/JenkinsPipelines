@@ -45,7 +45,13 @@ private void setupJobProperties(Map config) {
     def jobProperties = [
         parameters([
             stringParam(name: 'IMAGE_NAME', defaultValue: config.defaultImageName, description: 'Docker image to build and push'),
-            stringParam(name: 'DOCKER_CREDENTIALS_ID', defaultValue: config.defaultDockerCredentialsId, description: 'Jenkins credentials ID for Docker registry'),
+            credentials(
+                name: 'DOCKER_CREDENTIALS_ID',
+                credentialType: 'Username with password',
+                defaultValue: config.defaultDockerCredentialsId,
+                description: 'Docker Registry credential',
+                required: true
+            ),
             stringParam(name: 'TAG', defaultValue: config.defaultTag, description: 'Docker image tag to push'),
             stringParam(name: 'DOCKERFILE', defaultValue: config.defaultDockerfile, description: 'Dockerfile to use for building the image'),
             booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Build Docker image without cache')

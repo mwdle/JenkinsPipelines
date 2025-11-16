@@ -47,9 +47,9 @@ private void setupJobProperties(Map config) {
             stringParam(name: 'IMAGE_NAME', defaultValue: config.defaultImageName, description: 'Docker image to build and push'),
             credentials(
                 name: 'DOCKER_CREDENTIALS_ID',
-                credentialType: 'Username with password',
+                // `credentialType` omitted to maintain compatibility with bitwarden-credentials-provider-plugin (Credentials of all types will be shown as options for this parameter)
                 defaultValue: config.defaultDockerCredentialsId,
-                description: 'Docker Registry credential',
+                description: 'Docker Registry "Username with password" credential',
                 required: true
             ),
             stringParam(name: 'TAG', defaultValue: config.defaultTag, description: 'Docker image tag to push'),

@@ -42,16 +42,10 @@ def call(Map parameters = [:]) {
             def repoName = env.JOB_NAME.split('/')[1]
             def appRoot = "${config.persistentWorkspace}/${repoName}"
             def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
-            try {
-                dir(deploymentPath) {
-                    deploymentFlow(config)
-                }
-            } finally {
-                if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
-                    cleanupPersistentWorkspace(appRoot, repoName)
-                } else {
-                    echo "Build failed with status: ${currentBuild.result}. Skipping cleanup to preserve the last known-good deployment."
-                }
+            dir(deploymentPath) {
+                // Set the deployment root in the configuration map for the cleanup stage 
+                config.appRoot = appRoot
+                deploymentFlow(config)
             }
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
             deploymentFlow(config)
@@ -125,6 +119,9 @@ private void deploymentFlow(Map config) {
         echo "Secrets integration disabled."
         composeStages()
     }
+    if (config.persistentWorkspace) {
+        cleanupPersistentWorkspace(config.appRoot)
+    }
 }
 
 /**
@@ -195,10 +192,10 @@ private void dockerCompose(String args, String envFileOpts = '') {
 /**
  * Cleans up old deployment directories in a persistent workspace.
  */
-private void cleanupPersistentWorkspace(String appRoot, String repoName) {
+private void cleanupPersistentWorkspace(String appRoot) {
     stage('Cleanup Old Deployments') {
         if (params.COMPOSE_DOWN) {
-            echo "Cleaning up all persistent deployment folders for ${repoName}..."
+            echo "Cleaning up all persistent deployment folders..."
             sh "rm -rf ${appRoot}"
         } else {
             echo "Build was successful. Cleaning up old deployments..."

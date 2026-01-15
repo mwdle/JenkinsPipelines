@@ -43,10 +43,9 @@ def call(Map parameters = [:]) {
             def appRoot = "${config.persistentWorkspace}/${repoName}"
             def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
             dir(deploymentPath) {
-                // Set the deployment root in the configuration map for the cleanup stage 
-                config.appRoot = appRoot
                 deploymentFlow(config)
             }
+            cleanupPersistentWorkspace(appRoot)
         } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
             deploymentFlow(config)
         }
@@ -118,9 +117,6 @@ private void deploymentFlow(Map config) {
     } else {
         echo "Secrets integration disabled."
         composeStages()
-    }
-    if (config.persistentWorkspace) {
-        cleanupPersistentWorkspace(config.appRoot)
     }
 }
 

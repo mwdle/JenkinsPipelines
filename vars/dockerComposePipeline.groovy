@@ -20,7 +20,8 @@ def call(Map parameters = [:]) {
         defaultNoCache:        false,
         defaultPullImages:     false,
         defaultTargetServices: '',
-        defaultLogTailCount:   '0'
+        defaultLogTailCount:   '0',
+        defaultDetached:       true
     ]
     def config = defaults + parameters
 
@@ -65,7 +66,8 @@ private void setupJobProperties(Map config) {
             booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Modifier: Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: config.defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
-            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after deployment.')
+            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after deployment.'),
+            booleanParam(name: 'DETACHED', defaultValue: config.defaultDetached, description: 'Modifier: Run services in detached (background) mode.')
         ])
     ]
     def cronSchedule = config.cronSchedule?.trim()
@@ -161,7 +163,11 @@ private void composeStages(String envFileOpts = '') {
                 echo "Pulling latest images."
                 dockerCompose("pull --ignore-pull-failures", envFileOpts)
             }
-            dockerCompose("up -d", envFileOpts)
+            def upArgs = "up"
+            if (params.DETACHED) {
+                upArgs += " -d"
+            }
+            dockerCompose(upArgs, envFileOpts)
             echo "Deployment status:"
             dockerCompose("ps", envFileOpts)
             if (logTailCount > 0) {

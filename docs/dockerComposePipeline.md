@@ -106,6 +106,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | `PULL_IMAGES`     | Boolean | Pull latest images before deploying.                                           |
 | `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`).                             |
 | `LOG_TAIL_COUNT`  | String  | Number of log lines to show after deployment.                                  |
+| `DETACHED`        | Boolean | Run services in detached (background) mode.                                    |
 
 ### Config Map Parameters (Jenkinsfile)
 
@@ -123,6 +124,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | `defaultPullImages`     | Boolean      | Default value for `PULL_IMAGES`.              |
 | `defaultTargetServices` | String       | Default value for `TARGET_SERVICES`.          |
 | `defaultLogTailCount`   | String       | Default value for `LOG_TAIL_COUNT`.           |
+| `defaultDetached`       | Boolean      | Default value for `DETACHED`.                 |
 | `envFileCredentialIds`  | List<String> | Jenkins File credential IDs for `.env` files. |
 | `persistentWorkspace`   | String       | Path to bind-mounted workspace on host.       |
 
@@ -215,6 +217,7 @@ dockerComposePipeline(
     defaultPullImages: true,
     defaultTargetServices: "web api db",
     defaultLogTailCount: "50",
+    defaultDetached: true,
     envFileCredentialIds: [
         "my-app-secrets",
         "common-database-creds"

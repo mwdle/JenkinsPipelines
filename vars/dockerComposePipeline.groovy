@@ -166,6 +166,8 @@ private void composeStages(String envFileOpts = '') {
             def upArgs = "up"
             if (params.DETACHED) {
                 upArgs += " -d"
+            } else {
+                upArgs += " --abort-on-container-exit"
             }
             dockerCompose(upArgs, envFileOpts)
             echo "Deployment status:"

@@ -1,6 +1,6 @@
 # Docker Compose Pipeline for Jenkins
 
-The **Docker Compose Pipeline** is a flexible Jenkins pipeline library designed to streamline deployment and management of multi-service Docker Compose applications. It provides robust parameterization, secrets injection, workspace persistence, and custom hooks to make deployments predictable and repeatable.
+The **Docker Compose Pipeline** is a flexible Jenkins pipeline library designed to streamline Docker Compose workflows inside Jenkins. It provides robust parameterization, secrets injection, workspace persistence, and custom hooks to make runs predictable and repeatable.
 
 ---
 
@@ -10,9 +10,9 @@ This pipeline library automates Docker Compose workflows inside Jenkins. Key fea
 
 1. **Dynamic Parameterization:** Configure pipeline behavior at runtime with Jenkins build parameters for teardown, restart, build, image pull, and service targeting.
 2. **Secrets Integration:** Securely injects `.env` files stored in Jenkins file credentials into Docker Compose.
-3. **Custom Hooks:** Add custom pre-deployment logic via a post-checkout hook closure.
-4. **Persistent Workspaces:** Maintain consistent bind-mounted deployment folders on the host to support relative mounts and avoid re-deploying unchanged services.
-5. **Self-Cleaning Deployments:** Automatically clean old deployment directories after successful runs, ensuring efficient disk usage.
+3. **Custom Hooks:** Add custom logic via a post-checkout hook closure.
+4. **Persistent Workspaces:** Maintain consistent bind-mounted workspace folders on the host to support relative mounts in compose files.
+5. **Self-Cleaning Workspaces:** Automatically clean old build directories after successful runs, ensuring efficient disk usage.
 
 ---
 
@@ -35,7 +35,7 @@ or in an `.env` file:
 COMPOSE_PROJECT_NAME=my-app
 ```
 
-This ensures that the pipeline updates an existing deployment instead of creating a new parallel stack.
+This ensures that the pipeline updates existing services instead of creating a new parallel stack.
 
 ---
 
@@ -100,12 +100,12 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | ----------------- | ------- | ------------------------------------------------------------------------------ |
 | `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.                                           |
 | `COMPOSE_RESTART` | Boolean | Restart services, then exit.                                                   |
-| `FORCE_RECREATE`  | Boolean | Force redeployment by running `down` before `up`.                              |
-| `COMPOSE_BUILD`   | Boolean | Build images before deploying.                                                 |
+| `FORCE_RECREATE`  | Boolean | Run `down` before `up` to force a clean start.                                 |
+| `COMPOSE_BUILD`   | Boolean | Build images before running `up`.                                              |
 | `NO_CACHE`        | Boolean | Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled. |
-| `PULL_IMAGES`     | Boolean | Pull latest images before deploying.                                           |
+| `PULL_IMAGES`     | Boolean | Pull latest images before running `up`.                                        |
 | `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`).                             |
-| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after deployment.                                  |
+| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after `up` completes.                              |
 | `DETACHED`        | Boolean | Run services in detached (background) mode.                                    |
 
 ### Config Map Parameters (Jenkinsfile)
@@ -158,9 +158,9 @@ dockerComposePipeline(
 
 ## Persistent Workspace Setup
 
-To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, the path to your deployment directory must exist on both the Jenkins agent container and the Docker host.
+To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, the persistent workspace path must exist on both the Jenkins agent container and the Docker host.
 
-1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure the agent template to bind mount the deployment directory from the host to the agent, ensuring the source and destination paths are identical.
+1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure the agent template to bind mount the persistent workspace directory from the host to the agent, ensuring the source and destination paths are identical.
 
    _Example JCasC agent template:_
 
@@ -182,7 +182,7 @@ To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, th
    ```
 
 > [!WARNING]
-> The persistent workspace path must be dedicated to deployments. The pipeline will **delete old deployment folders** in this path to clean up after successful runs.
+> The persistent workspace path must be dedicated to Jenkins. The pipeline will **delete old build directories** in this path to clean up after successful runs.
 
 ---
 

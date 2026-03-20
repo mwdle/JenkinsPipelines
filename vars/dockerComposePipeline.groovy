@@ -1,7 +1,7 @@
 /*
  * Docker Compose Pipeline for Jenkins
  *
- * This pipeline library automates Docker Compose deployments inside Jenkins.
+ * This pipeline library automates Docker Compose workflows inside Jenkins.
  * Full usage instructions, configuration options, and examples are in the README.
  */
 def call(Map parameters = [:]) {
@@ -30,7 +30,7 @@ def call(Map parameters = [:]) {
 
     // First build registers parameters and exits
     if (env.BUILD_NUMBER == '1') {
-        echo "Jenkins is initializing this job. Please re-run to start a deployment."
+        echo "Jenkins is initializing this job. Please re-run to proceed."
         currentBuild.result = 'NOT_BUILT'
         return
     }
@@ -61,12 +61,12 @@ private void setupJobProperties(Map config) {
         parameters([
             booleanParam(name: 'COMPOSE_DOWN', defaultValue: config.defaultComposeDown, description: 'Action: Stop and remove services and then exit the pipeline.'),
             booleanParam(name: 'COMPOSE_RESTART', defaultValue: config.defaultComposeRestart, description: 'Action: Restart services and then exit the pipeline.'),
-            booleanParam(name: 'FORCE_RECREATE', defaultValue: config.defaultForceRecreate, description: 'Modifier: Force a clean deployment by running `down` before `up`.'),
-            booleanParam(name: 'COMPOSE_BUILD', defaultValue: config.defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before deploying.'),
+            booleanParam(name: 'FORCE_RECREATE', defaultValue: config.defaultForceRecreate, description: 'Modifier: Run `down` before `up` to force a clean start.'),
+            booleanParam(name: 'COMPOSE_BUILD', defaultValue: config.defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before running `up`.'),
             booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Modifier: Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.'),
-            booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before deploying.'),
+            booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before running `up`.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: config.defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
-            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after deployment.'),
+            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after `up` completes.'),
             booleanParam(name: 'DETACHED', defaultValue: config.defaultDetached, description: 'Modifier: Run services in detached (background) mode.')
         ])
     ]
@@ -93,7 +93,7 @@ private void validateParameters() {
 }
 
 /**
- * Defines the core deployment logic, allowing it to be called conditionally with or without the persistent workspace feature.
+ * Defines the core logic, allowing it to be called conditionally with or without the persistent workspace feature.
  */
 private void deploymentFlow(Map config) {
     stage('Checkout') {
@@ -123,7 +123,7 @@ private void deploymentFlow(Map config) {
 }
 
 /**
- * Defines the core teardown, build, and deploy logic.
+ * Defines the core teardown, build, and run logic.
  */
 private void composeStages(String envFileOpts = '') {
     def logTailCount = params.LOG_TAIL_COUNT.toInteger()
@@ -153,10 +153,10 @@ private void composeStages(String envFileOpts = '') {
                 dockerCompose(buildArgs, envFileOpts)
             }
         }
-        stage('Deploy') {
-            echo "=== Deploying Services ==="
+        stage('Up') {
+            echo "=== Starting Services ==="
             if (params.FORCE_RECREATE) {
-                echo 'Force recreate requested. Executing `docker compose down` before redeploy.'
+                echo 'Force recreate requested. Executing `docker compose down` before `up`.'
                 dockerCompose("down", envFileOpts)
             }
             if (params.PULL_IMAGES) {
@@ -170,7 +170,7 @@ private void composeStages(String envFileOpts = '') {
                 upArgs += " --abort-on-container-exit"
             }
             dockerCompose(upArgs, envFileOpts)
-            echo "Deployment status:"
+            echo "Service status:"
             dockerCompose("ps", envFileOpts)
             if (logTailCount > 0) {
                 sleep 3 // Short sleep to give logs time to populate
@@ -194,15 +194,15 @@ private void dockerCompose(String args, String envFileOpts = '') {
 }
 
 /**
- * Cleans up old deployment directories in a persistent workspace.
+ * Cleans up old build directories in a persistent workspace.
  */
 private void cleanupPersistentWorkspace(String appRoot) {
-    stage('Cleanup Old Deployments') {
+    stage('Cleanup') {
         if (params.COMPOSE_DOWN) {
-            echo "Cleaning up all persistent deployment folders..."
+            echo "Cleaning up all persistent workspace folders..."
             sh "rm -rf ${appRoot}"
         } else {
-            echo "Build was successful. Cleaning up old deployments..."
+            echo "Cleaning up old build directories..."
             dir(appRoot) {
                 sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
             }

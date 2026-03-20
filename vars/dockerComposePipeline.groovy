@@ -8,10 +8,11 @@ def call(Map parameters = [:]) {
 
     // Centralized configuration with defaults. User-provided config overrides defaults.
     def defaults = [
-        agentLabel:          'docker',
-        disableTriggers:     false,
-        cronSchedule:        null,
-        postCheckoutSteps:   null,
+        agentLabel:                'docker',
+        disableConcurrentBuilds:   false,
+        disableTriggers:           false,
+        cronSchedule:              null,
+        postCheckoutSteps:         null,
         // Parameter defaults
         defaultComposeDown:    false,
         defaultComposeRestart: false,
@@ -70,6 +71,9 @@ private void setupJobProperties(Map config) {
             booleanParam(name: 'DETACHED', defaultValue: config.defaultDetached, description: 'Modifier: Run services in detached (background) mode.')
         ])
     ]
+    if (config.disableConcurrentBuilds) {
+        jobProperties.add(disableConcurrentBuilds())
+    }
     def cronSchedule = config.cronSchedule?.trim()
     if (config.disableTriggers) {
         jobProperties.add(overrideIndexTriggers(false))

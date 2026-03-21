@@ -12,6 +12,7 @@ def call(Map parameters = [:]) {
         disableConcurrentBuilds:   false,
         disableTriggers:           false,
         cronSchedule:              null,
+        additionalTriggers:        null,
         alertEmail:                null,
         postCheckoutSteps:         null,
         // Parameter defaults
@@ -85,11 +86,14 @@ private void setupJobProperties(Map config) {
         jobProperties.add(disableConcurrentBuilds())
     }
     def cronSchedule = config.cronSchedule?.trim()
+    def triggers = []
+    if (cronSchedule) triggers.add(cron(cronSchedule))
+    if (config.additionalTriggers) triggers.addAll(config.additionalTriggers)
     if (config.disableTriggers) {
         jobProperties.add(overrideIndexTriggers(false))
         jobProperties.add(pipelineTriggers([]))
-    } else if (cronSchedule) {
-        jobProperties.add(pipelineTriggers([cron(cronSchedule)]))
+    } else if (triggers) {
+        jobProperties.add(pipelineTriggers(triggers))
     }
     properties(jobProperties)
 }

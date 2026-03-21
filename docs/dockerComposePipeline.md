@@ -110,25 +110,26 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                 | Type         | Description                                                |
-| ------------------------- | ------------ | ---------------------------------------------------------- |
-| `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                 |
-| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `false`).   |
-| `disableTriggers`         | Boolean      | Disable pipeline triggers (default: `false`).              |
-| `cronSchedule`            | String       | Cron expression for periodic builds.                       |
-| `alertEmail`              | String       | Email address for failure notifications (default: `null`). |
-| `postCheckoutSteps`       | Closure      | Hook to execute after checkout.                            |
-| `defaultComposeDown`      | Boolean      | Default value for `COMPOSE_DOWN`.                          |
-| `defaultComposeRestart`   | Boolean      | Default value for `COMPOSE_RESTART`.                       |
-| `defaultForceRecreate`    | Boolean      | Default value for `FORCE_RECREATE`.                        |
-| `defaultComposeBuild`     | Boolean      | Default value for `COMPOSE_BUILD`.                         |
-| `defaultNoCache`          | Boolean      | Default value for `NO_CACHE`.                              |
-| `defaultPullImages`       | Boolean      | Default value for `PULL_IMAGES`.                           |
-| `defaultTargetServices`   | String       | Default value for `TARGET_SERVICES`.                       |
-| `defaultLogTailCount`     | String       | Default value for `LOG_TAIL_COUNT`.                        |
-| `defaultDetached`         | Boolean      | Default value for `DETACHED`.                              |
-| `envFileCredentialIds`    | List<String> | Jenkins File credential IDs for `.env` files.              |
-| `persistentWorkspace`     | String       | Path to bind-mounted workspace on host.                    |
+| Parameter                 | Type         | Description                                                                                                                                                         |
+| ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                                                                                                                          |
+| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `false`).                                                                                                            |
+| `disableTriggers`         | Boolean      | Disable pipeline triggers (default: `false`).                                                                                                                       |
+| `cronSchedule`            | String       | Cron expression for periodic builds.                                                                                                                                |
+| `additionalTriggers`      | List         | List of Jenkins trigger objects to add alongside `cronSchedule`. Must use **scripted pipeline** syntax (e.g., `[$class: 'GenericTrigger', ...]`, `pollSCM('...')`). |
+| `alertEmail`              | String       | Email address for failure notifications (default: `null`).                                                                                                          |
+| `postCheckoutSteps`       | Closure      | Hook to execute after checkout.                                                                                                                                     |
+| `defaultComposeDown`      | Boolean      | Default value for `COMPOSE_DOWN`.                                                                                                                                   |
+| `defaultComposeRestart`   | Boolean      | Default value for `COMPOSE_RESTART`.                                                                                                                                |
+| `defaultForceRecreate`    | Boolean      | Default value for `FORCE_RECREATE`.                                                                                                                                 |
+| `defaultComposeBuild`     | Boolean      | Default value for `COMPOSE_BUILD`.                                                                                                                                  |
+| `defaultNoCache`          | Boolean      | Default value for `NO_CACHE`.                                                                                                                                       |
+| `defaultPullImages`       | Boolean      | Default value for `PULL_IMAGES`.                                                                                                                                    |
+| `defaultTargetServices`   | String       | Default value for `TARGET_SERVICES`.                                                                                                                                |
+| `defaultLogTailCount`     | String       | Default value for `LOG_TAIL_COUNT`.                                                                                                                                 |
+| `defaultDetached`         | Boolean      | Default value for `DETACHED`.                                                                                                                                       |
+| `envFileCredentialIds`    | List<String> | Jenkins File credential IDs for `.env` files.                                                                                                                       |
+| `persistentWorkspace`     | String       | Path to bind-mounted workspace on host.                                                                                                                             |
 
 ---
 
@@ -208,6 +209,18 @@ dockerComposePipeline(
     disableConcurrentBuilds: false,
     disableTriggers: false,
     cronSchedule: '0 0 * * *',
+    additionalTriggers: [
+        // Providing the GenericTrigger requires the Generic Webhook Trigger plugin. Must use scripted pipeline syntax.
+        [$class: 'GenericTrigger',
+            genericVariables: [
+                [key: 'GIT_REPO', value: '$.repository.full_name', defaultValue: ''],
+                [key: 'GIT_SENDER', value: '$.sender.login', defaultValue: '']
+            ],
+            causeString: 'Triggered by webhook',
+            token: '', tokenCredentialId: 'My Webhook Token',
+            silentResponse: true
+        ]
+    ],
     alertEmail: 'admin@example.com',
     postCheckoutSteps: {
         echo "Running custom post-checkout steps..."

@@ -12,6 +12,7 @@ def call(Map parameters = [:]) {
         disableConcurrentBuilds:   false,
         disableTriggers:           false,
         cronSchedule:              null,
+        alertEmail:                null,
         postCheckoutSteps:         null,
         // Parameter defaults
         defaultComposeDown:    false,
@@ -40,16 +41,25 @@ def call(Map parameters = [:]) {
     validateParameters()
 
     node(config.agentLabel) {
-        if (config.persistentWorkspace) {
-            def repoName = env.JOB_NAME.split('/')[1]
-            def appRoot = "${config.persistentWorkspace}/${repoName}"
-            def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
-            dir(deploymentPath) {
+        try {
+            if (config.persistentWorkspace) {
+                def repoName = env.JOB_NAME.split('/')[1]
+                def appRoot = "${config.persistentWorkspace}/${repoName}"
+                def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
+                dir(deploymentPath) {
+                    deploymentFlow(config)
+                }
+                cleanupPersistentWorkspace(appRoot)
+            } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
                 deploymentFlow(config)
             }
-            cleanupPersistentWorkspace(appRoot)
-        } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
-            deploymentFlow(config)
+        } catch (err) {
+            if (config.alertEmail) {
+                mail to: config.alertEmail,
+                     subject: "🚨 Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build failed!\n\nJob: ${env.JOB_NAME}\nBuild: #${env.BUILD_NUMBER}\n\nCheck Jenkins logs here: ${env.BUILD_URL}"
+            }
+            throw err
         }
     }
 }

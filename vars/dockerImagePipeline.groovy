@@ -11,6 +11,7 @@ def call(Map parameters = [:]) {
         agentLabel:                 'docker',
         disableTriggers:            false,
         cronSchedule:               null,
+        alertEmail:                 null,
         // Parameter defaults
         defaultDockerCredentialsId: 'docker-hub',
         defaultImageName:           '',
@@ -34,7 +35,16 @@ def call(Map parameters = [:]) {
     validateParameters()
 
     node(config.agentLabel) {
-        imageBuildFlow()
+        try {
+            imageBuildFlow()
+        } catch (err) {
+            if (config.alertEmail) {
+                mail to: config.alertEmail,
+                     subject: "🚨 Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build failed!\n\nJob: ${env.JOB_NAME}\nBuild: #${env.BUILD_NUMBER}\n\nCheck Jenkins logs here: ${env.BUILD_URL}"
+            }
+            throw err
+        }
     }
 }
 

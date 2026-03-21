@@ -45,16 +45,17 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                    | Type    | Description                                           |
-| ---------------------------- | ------- | ----------------------------------------------------- |
-| `agentLabel`                 | String  | Jenkins agent label (default: `"docker"`).            |
-| `disableTriggers`            | Boolean | Disable pipeline triggers (default: `false`).         |
-| `cronSchedule`               | String  | Cron expression for periodic builds.                  |
-| `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries. |
-| `defaultImageName`           | String  | Default Docker image name.                            |
-| `defaultDockerfile`          | String  | Default Dockerfile path.                              |
-| `defaultTag`                 | String  | Default Docker image tag.                             |
-| `defaultNoCache`             | Boolean | Default for building with no cache.                   |
+| Parameter                    | Type    | Description                                                |
+| ---------------------------- | ------- | ---------------------------------------------------------- |
+| `agentLabel`                 | String  | Jenkins agent label (default: `"docker"`).                 |
+| `disableTriggers`            | Boolean | Disable pipeline triggers (default: `false`).              |
+| `cronSchedule`               | String  | Cron expression for periodic builds.                       |
+| `alertEmail`                 | String  | Email address for failure notifications (default: `null`). |
+| `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries.      |
+| `defaultImageName`           | String  | Default Docker image name.                                 |
+| `defaultDockerfile`          | String  | Default Dockerfile path.                                   |
+| `defaultTag`                 | String  | Default Docker image tag.                                  |
+| `defaultNoCache`             | Boolean | Default for building with no cache.                        |
 
 ---
 
@@ -101,6 +102,7 @@ dockerImagePipeline(
     agentLabel: 'docker',
     disableTriggers: false,
     cronSchedule: '0 0 * * *',
+    alertEmail: 'admin@example.com',
     defaultDockerCredentialsId: 'docker-hub',
     defaultImageName: 'my-org/my-app',
     defaultDockerfile: 'Dockerfile',

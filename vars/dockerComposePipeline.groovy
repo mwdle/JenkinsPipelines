@@ -10,7 +10,7 @@ def call(Map parameters = [:]) {
     def defaults = [
         agentLabel:                'docker',
         disableConcurrentBuilds:   false,
-        disableTriggers:           false,
+        disableIndexTriggers:      false,
         cronSchedule:              null,
         additionalTriggers:        [],
         alertEmail:                null,
@@ -89,12 +89,11 @@ private void setupJobProperties(Map config) {
     def triggers = []
     if (cronSchedule) triggers.add(cron(cronSchedule))
     if (config.additionalTriggers) triggers.addAll(config.additionalTriggers)
-    if (config.disableTriggers) {
+    if (config.disableIndexTriggers) {
         jobProperties.add(overrideIndexTriggers(false))
-        jobProperties.add(pipelineTriggers(triggers))
-    } else if (triggers) {
-        jobProperties.add(pipelineTriggers(triggers))
     }
+    jobProperties.add(pipelineTriggers(triggers))
+
     properties(jobProperties)
 }
 

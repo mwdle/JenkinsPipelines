@@ -45,17 +45,17 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                    | Type    | Description                                                |
-| ---------------------------- | ------- | ---------------------------------------------------------- |
-| `agentLabel`                 | String  | Jenkins agent label (default: `"docker"`).                 |
-| `disableTriggers`            | Boolean | Disable pipeline triggers (default: `false`).              |
-| `cronSchedule`               | String  | Cron expression for periodic builds.                       |
-| `alertEmail`                 | String  | Email address for failure notifications (default: `null`). |
-| `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries.      |
-| `defaultImageName`           | String  | Default Docker image name.                                 |
-| `defaultDockerfile`          | String  | Default Dockerfile path.                                   |
-| `defaultTag`                 | String  | Default Docker image tag.                                  |
-| `defaultNoCache`             | Boolean | Default for building with no cache.                        |
+| Parameter                    | Type    | Description                                                                                                                           |
+| ---------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentLabel`                 | String  | Jenkins agent label (default: `"docker"`).                                                                                            |
+| `disableIndexTriggers`       | Boolean | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` (default: `false`). |
+| `cronSchedule`               | String  | Cron expression for periodic builds.                                                                                                  |
+| `alertEmail`                 | String  | Email address for failure notifications (default: `null`).                                                                            |
+| `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries.                                                                                 |
+| `defaultImageName`           | String  | Default Docker image name.                                                                                                            |
+| `defaultDockerfile`          | String  | Default Dockerfile path.                                                                                                              |
+| `defaultTag`                 | String  | Default Docker image tag.                                                                                                             |
+| `defaultNoCache`             | Boolean | Default for building with no cache.                                                                                                   |
 
 ---
 
@@ -90,8 +90,8 @@ dockerImagePipeline(
 Changes to job properties (like parameter defaults) require **one build run** to take effect.  
 Example:
 
-- To disable triggers: `disableTriggers: true` → run build → triggers off.
-- To re-enable triggers: `disableTriggers: false` → run build manually → triggers on.
+- To disable index triggers: `disableIndexTriggers: true` → run build → branch indexing triggers off. `cronSchedule` remains active (if configured).
+- To re-enable index triggers: `disableIndexTriggers: false` → run build manually → branch indexing triggers on.
 
 ## Full Example Jenkinsfile
 
@@ -100,7 +100,7 @@ Example:
 
 dockerImagePipeline(
     agentLabel: 'docker',
-    disableTriggers: false,
+    disableIndexTriggers: false,
     cronSchedule: '0 0 * * *',
     alertEmail: 'admin@example.com',
     defaultDockerCredentialsId: 'docker-hub',

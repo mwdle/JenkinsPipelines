@@ -9,7 +9,7 @@ def call(Map parameters = [:]) {
     // Centralized configuration with defaults. User-provided config overrides defaults.
     def defaults = [
         agentLabel:                 'docker',
-        disableTriggers:            false,
+        disableIndexTriggers:       false,
         cronSchedule:               null,
         alertEmail:                 null,
         // Parameter defaults
@@ -69,13 +69,11 @@ private void setupJobProperties(Map config) {
     ]
 
     def cronSchedule = config.cronSchedule?.trim()
-    if (config.disableTriggers) {
+    def triggers = []
+    if (cronSchedule) triggers.add(cron(cronSchedule))
+    if (config.disableIndexTriggers)
         jobProperties.add(overrideIndexTriggers(false))
-        jobProperties.add(pipelineTriggers([]))
-    } else if (cronSchedule) {
-        jobProperties.add(pipelineTriggers([cron(cronSchedule)]))
-    }
-
+    jobProperties.add(pipelineTriggers(triggers))
     properties(jobProperties)
 }
 

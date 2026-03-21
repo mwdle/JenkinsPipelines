@@ -114,7 +114,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                                                                                                                          |
 | `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `false`).                                                                                                            |
-| `disableTriggers`         | Boolean      | Disable pipeline triggers (default: `false`).                                                                                                                       |
+| `disableTriggers`         | Boolean      | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` or `additionalTriggers` (default: `false`).       |
 | `cronSchedule`            | String       | Cron expression for periodic builds.                                                                                                                                |
 | `additionalTriggers`      | List         | List of Jenkins trigger objects to add alongside `cronSchedule`. Must use **scripted pipeline** syntax (e.g., `[$class: 'GenericTrigger', ...]`, `pollSCM('...')`). |
 | `alertEmail`              | String       | Email address for failure notifications (default: `null`).                                                                                                          |
@@ -194,8 +194,8 @@ To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, th
 Changes to job properties (like parameter defaults) require **one build run** to take effect.  
 Example:
 
-- To disable triggers: `disableTriggers: true` → run build → triggers off.
-- To re-enable triggers: `disableTriggers: false` → run build manually → triggers on.
+- To disable index triggers: `disableTriggers: true` → run build → branch indexing triggers off. `cronSchedule` and `additionalTriggers` remain active (if configured).
+- To re-enable index triggers: `disableTriggers: false` → run build manually → branch indexing triggers on.
 
 ---
 
@@ -218,7 +218,6 @@ dockerComposePipeline(
             ],
             causeString: 'Triggered by webhook',
             token: '', tokenCredentialId: 'My Webhook Token',
-            silentResponse: true
         ]
     ],
     alertEmail: 'admin@example.com',

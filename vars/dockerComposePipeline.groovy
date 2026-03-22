@@ -104,8 +104,8 @@ private void validateParameters() {
     if (!params.TARGET_SERVICES.matches(/^[a-zA-Z0-9\s._-]*$/)) {
         error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
     }
-    if (!params.LOG_TAIL_COUNT.matches(/^\d+$/)) {
-        error("LOG_TAIL_COUNT must be a non-negative number.")
+    if (!params.LOG_TAIL_COUNT.matches(/^-?\d+$/)) {
+        error("LOG_TAIL_COUNT must be a number.")
     }
 }
 
@@ -189,7 +189,7 @@ private void composeStages(String envFileOpts = '') {
             dockerCompose(upArgs, envFileOpts)
             echo "Service status:"
             dockerCompose("ps", envFileOpts)
-            if (logTailCount > 0) {
+            if (logTailCount) {
                 sleep 3 // Short sleep to give logs time to populate
                 echo "--> Showing last ${logTailCount} log lines:"
                 dockerCompose("logs --tail=${logTailCount}", envFileOpts)

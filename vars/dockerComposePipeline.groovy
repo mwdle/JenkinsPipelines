@@ -8,23 +8,23 @@ def call(Map parameters = [:]) {
 
     // Centralized configuration with defaults. User-provided config overrides defaults.
     def defaults = [
-        agentLabel:                'docker',
-        disableConcurrentBuilds:   false,
-        disableIndexTriggers:      false,
-        cronSchedule:              null,
-        additionalTriggers:        [],
-        alertEmail:                null,
-        postCheckoutSteps:         null,
+        agentLabel:              'docker',
+        disableConcurrentBuilds: false,
+        disableIndexTriggers:    false,
+        cronSchedule:            null,
+        additionalTriggers:      [],
+        alertEmail:              null,
+        postCheckoutSteps:       null,
         // Parameter defaults
-        defaultComposeDown:    false,
-        defaultComposeRestart: false,
-        defaultForceRecreate:  false,
-        defaultComposeBuild:   false,
-        defaultNoCache:        false,
-        defaultPullImages:     false,
-        defaultTargetServices: '',
-        defaultLogTailCount:   '0',
-        defaultDetached:       true
+        defaultComposeDown:      false,
+        defaultComposeRestart:   false,
+        defaultForceRecreate:    false,
+        defaultComposeBuild:     false,
+        defaultNoCache:          false,
+        defaultPullImages:       false,
+        defaultTargetServices:   '',
+        defaultLogTailCount:     '0',
+        defaultDetached:         true
     ]
     def config = defaults + parameters
 

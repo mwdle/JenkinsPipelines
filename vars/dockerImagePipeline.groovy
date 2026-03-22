@@ -14,6 +14,7 @@ def call(Map parameters = [:]) {
         alertEmail:                 null,
         // Parameter defaults
         defaultDockerCredentialsId: 'docker-hub',
+        defaultRegistryHost:        '',
         defaultImageName:           '',
         defaultDockerfile:          'Dockerfile',
         defaultTag:                 'latest',
@@ -54,6 +55,7 @@ def call(Map parameters = [:]) {
 private void setupJobProperties(Map config) {
     def jobProperties = [
         parameters([
+            stringParam(name: 'REGISTRY_HOST', defaultValue: config.defaultRegistryHost, description: 'Registry hostname (e.g., "gitea.example.com" or "nexus.local:5000"). Leave empty for Docker Hub.'),
             stringParam(name: 'IMAGE_NAME', defaultValue: config.defaultImageName, description: 'Docker image to build and push'),
             credentials(
                 name: 'DOCKER_CREDENTIALS_ID',
@@ -81,6 +83,9 @@ private void setupJobProperties(Map config) {
  * Validates all user-provided string parameters for security and correctness.
  */
 private void validateParameters() {
+    if (params.REGISTRY_HOST && !params.REGISTRY_HOST.matches(/^[a-zA-Z0-9.:_-]+$/)) {
+        error("Invalid characters in REGISTRY_HOST. Halting for security reasons.")
+    }
     if (!params.IMAGE_NAME.matches(/^[a-zA-Z0-9\/._-]+$/)) {
         error("Invalid characters in IMAGE_NAME. Halting for security reasons.")
     }
@@ -101,25 +106,27 @@ private void imageBuildFlow() {
     }
 
     def gitSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
+    def registryHost = params.REGISTRY_HOST ?: ''
     def imageName = params.IMAGE_NAME
+    def fullImageName = registryHost ? "${registryHost}/${imageName}" : imageName
     def tag = params.TAG
 
     stage('Build Docker Image') {
         def dockerfile = params.DOCKERFILE
         def noCacheFlag = params.NO_CACHE ? '--no-cache' : ''
 
-        echo "=== Building Docker Image: ${imageName}:${tag} ==="
-        sh "docker build ${noCacheFlag} -f ${dockerfile} -t ${imageName}:${tag} -t ${imageName}:${gitSha} ."
+        echo "=== Building Docker Image: ${fullImageName}:${tag} ==="
+        sh "docker build ${noCacheFlag} -f ${dockerfile} -t ${fullImageName}:${tag} -t ${fullImageName}:${gitSha} ."
     }
 
     stage('Push Docker Image') {
         echo "=== Logging in to Docker Registry ==="
         withCredentials([usernamePassword(credentialsId: params.DOCKER_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-            sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+            sh "echo \$DOCKER_PASS | docker login ${registryHost} -u \$DOCKER_USER --password-stdin"
         }
 
-        echo "=== Pushing Docker Image: ${imageName}:${tag} and ${imageName}:${gitSha} ==="
-        sh "docker push ${imageName}:${tag}"
-        sh "docker push ${imageName}:${gitSha}"
+        echo "=== Pushing Docker Image: ${fullImageName}:${tag} and ${fullImageName}:${gitSha} ==="
+        sh "docker push ${fullImageName}:${tag}"
+        sh "docker push ${fullImageName}:${gitSha}"
     }
 }

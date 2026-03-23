@@ -106,7 +106,7 @@ private void setupJobProperties(Map config) {
  */
 private void validateConfig(Map config) {
     if (config.persistentWorkspace) {
-        if (!(config.persistentWorkspace instanceof String)) {
+        if (!(config.persistentWorkspace instanceof CharSequence)) {
             error("Config Error: 'persistentWorkspace' must be a String path.")
         }
         def forbiddenPaths = ['/', '/home']

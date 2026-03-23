@@ -22,6 +22,8 @@ def call(Map parameters = [:]) {
     ]
     def config = defaults + parameters
 
+    validateConfig(config)
+
     // Setup job properties, parameters, and triggers
     setupJobProperties(config)
 
@@ -77,6 +79,24 @@ private void setupJobProperties(Map config) {
         jobProperties.add(overrideIndexTriggers(false))
     jobProperties.add(pipelineTriggers(triggers))
     properties(jobProperties)
+}
+
+/**
+ * Validates all config map parameters for correctness.
+ */
+private void validateConfig(Map config) {
+    if (config.alertEmail && !config.alertEmail.contains('@')) {
+        error("Config Error: 'alertEmail' (${config.alertEmail}) does not look like a valid email address.")
+    }
+    def booleanParams = [
+        'disableIndexTriggers',
+        'defaultNoCache'
+    ]
+    booleanParams.each { param ->
+        if (config[param] != null && !(config[param] instanceof Boolean)) {
+            error("Config Error: '${param}' must be a Boolean (true/false), not a String.")
+        }
+    }
 }
 
 /**

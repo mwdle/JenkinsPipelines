@@ -4,7 +4,7 @@
  * This pipeline library automates Docker Compose workflows inside Jenkins.
  * Full usage instructions, configuration options, and examples are in the README.
  */
-def call(Map parameters = [:]) {
+def call(Map configParams = [:]) {
 
     // Centralized configuration with defaults. User-provided config overrides defaults.
     def defaults = [
@@ -26,7 +26,9 @@ def call(Map parameters = [:]) {
         defaultLogTailCount:     '0',
         defaultDetached:         true
     ]
-    def config = defaults + parameters
+    def config = defaults + configParams
+
+    validateConfig(config)
 
     // Setup job properties, parameters, and triggers
     setupJobProperties(config)
@@ -44,7 +46,8 @@ def call(Map parameters = [:]) {
     node(config.agentLabel) {
         try {
             if (config.persistentWorkspace) {
-                def repoName = env.JOB_NAME.split('/')[1]
+                def jobNameParts = env.JOB_NAME.tokenize('/')
+                def repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts[0]
                 def appRoot = "${config.persistentWorkspace}/${repoName}"
                 def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
                 dir(deploymentPath) {
@@ -96,6 +99,46 @@ private void setupJobProperties(Map config) {
     jobProperties.add(pipelineTriggers(triggers))
 
     properties(jobProperties)
+}
+
+/**
+ * Validates all config map parameters for correctness.
+ */
+private void validateConfig(Map config) {
+    if (config.persistentWorkspace) {
+        if (!(config.persistentWorkspace instanceof String)) {
+            error("Config Error: 'persistentWorkspace' must be a String path.")
+        }
+        def forbiddenPaths = ['/', '/home']
+        if (forbiddenPaths.contains(config.persistentWorkspace.trim())) {
+            error("Config Error: 'persistentWorkspace' cannot be a system root path (${config.persistentWorkspace}).")
+        }
+    }
+    if (config.alertEmail && !config.alertEmail.contains('@')) {
+        error("Config Error: 'alertEmail' (${config.alertEmail}) does not look like a valid email address.")
+    }
+    if (config.envFileCredentialIds && !(config.envFileCredentialIds instanceof List)) {
+        error("Config Error: 'envFileCredentialIds' must be a List of strings.")
+    }
+    if (config.postCheckoutSteps && !(config.postCheckoutSteps instanceof Closure)) {
+        error("Config Error: 'postCheckoutSteps' must be a code block { ... }.")
+    }
+    def booleanParams = [
+        'disableConcurrentBuilds',
+        'disableIndexTriggers',
+        'defaultComposeDown',
+        'defaultComposeRestart',
+        'defaultForceRecreate',
+        'defaultComposeBuild',
+        'defaultNoCache',
+        'defaultPullImages',
+        'defaultDetached'
+    ]
+    booleanParams.each { param ->
+        if (config[param] != null && !(config[param] instanceof Boolean)) {
+            error("Config Error: '${param}' must be a Boolean (true/false), not a String.")
+        }
+    }
 }
 
 /**
@@ -205,8 +248,8 @@ private void composeStages(String envFileOpts = '') {
 private void dockerCompose(String args, String envFileOpts = '') {
     def command = "docker compose ${envFileOpts} ${args}"
     // The 'config' command does not accept service names, but all others do.
-    if (!args.startsWith('config') && params.TARGET_SERVICES) {
-        command += " ${params.TARGET_SERVICES}"
+    if (!args.startsWith('config') && params.TARGET_SERVICES?.trim()) {
+        command += " ${params.TARGET_SERVICES.trim()}"
     }
     sh(command)
 }
@@ -218,7 +261,7 @@ private void cleanupPersistentWorkspace(String appRoot) {
     stage('Cleanup') {
         if (params.COMPOSE_DOWN) {
             echo "Cleaning up all persistent workspace folders..."
-            sh "rm -rf ${appRoot}"
+            sh "rm -rf '${appRoot}'"
         } else {
             echo "Cleaning up old build directories..."
             dir(appRoot) {

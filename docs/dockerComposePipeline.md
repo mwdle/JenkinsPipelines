@@ -153,7 +153,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 @Library("JenkinsPipelines") _
 dockerComposePipeline(
     envFileCredentialIds: ['my-app-secrets'],
-    persistentWorkspace: '/opt/AppData'
+    persistentWorkspace: '/home/myusername/docker/workspace'
 )
 ```
 
@@ -175,13 +175,13 @@ To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, th
              # ... other agent config ...
              mountsString: |-
                type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
-               type=bind,source=/opt/AppData,destination=/opt/AppData
+               type=bind,source=/home/myusername/docker/workspace,destination=/home/myusername/docker/workspace
    ```
 
 2. **Set Persistent Workspace:** In your Jenkinsfile, set the `persistentWorkspace` parameter to the same path used in the agent configuration.
 
    ```groovy
-   persistentWorkspace: '/opt/AppData'
+   persistentWorkspace: '/home/myusername/docker/workspace'
    ```
 
 > [!WARNING]
@@ -238,6 +238,6 @@ dockerComposePipeline(
         "my-app-secrets",
         "common-database-creds"
     ],
-    persistentWorkspace: '/opt/jenkins/deployments'
+    persistentWorkspace: '/home/myusername/docker/workspace'
 )
 ```

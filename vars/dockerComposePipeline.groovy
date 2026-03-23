@@ -55,7 +55,8 @@ def call(Map parameters = [:]) {
                 deploymentFlow(config)
             }
         } catch (err) {
-            if (config.alertEmail) {
+            def isAborted = err instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+            if (config.alertEmail && !isAborted) {
                 mail to: config.alertEmail,
                      subject: "🚨 Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                      body: "Build failed!\n\nJob: ${env.JOB_NAME}\nBuild: #${env.BUILD_NUMBER}\n\nCheck Jenkins logs here: ${env.BUILD_URL}"

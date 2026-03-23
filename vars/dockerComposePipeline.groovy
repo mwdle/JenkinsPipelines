@@ -77,9 +77,9 @@ private void setupJobProperties(Map config) {
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: config.defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before running `up`.'),
             booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Modifier: Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Pull the latest version of image(s) before running `up`.'),
+            booleanParam(name: 'DETACHED', defaultValue: config.defaultDetached, description: 'Modifier: Run services in detached (background) mode.'),
             stringParam(name: 'TARGET_SERVICES', defaultValue: config.defaultTargetServices, description: 'Option: Specify services to target (e.g., "nextcloud db redis").'),
-            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after `up` completes.'),
-            booleanParam(name: 'DETACHED', defaultValue: config.defaultDetached, description: 'Modifier: Run services in detached (background) mode.')
+            stringParam(name: 'LOG_TAIL_COUNT', defaultValue: config.defaultLogTailCount.toString(), description: 'Option: Number of log lines to show after `up` completes.')
         ])
     ]
     if (config.disableConcurrentBuilds) {

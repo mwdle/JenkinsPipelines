@@ -226,7 +226,7 @@ private void composeStages(String envFileOpts = '') {
             }
             def upArgs = "up"
             if (params.DETACHED) {
-                upArgs += " -d"
+                upArgs += " -d --wait"
             } else {
                 upArgs += " --abort-on-container-exit"
             }

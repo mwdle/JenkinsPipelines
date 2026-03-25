@@ -246,7 +246,7 @@ private void composeStages(String envFileOpts = '') {
  * Runs a docker compose command with optional environment file overrides.
  */
 private void dockerCompose(String args, String envFileOpts = '') {
-    def command = "docker compose ${envFileOpts} ${args}"
+    def command = "docker compose --progress=plain ${envFileOpts} ${args}"
     // The 'config' command does not accept service names, but all others do.
     if (!args.startsWith('config') && params.TARGET_SERVICES?.trim()) {
         command += " ${params.TARGET_SERVICES.trim()}"

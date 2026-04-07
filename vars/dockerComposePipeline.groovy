@@ -230,11 +230,16 @@ private void composeStages(String envFileOpts = '') {
             } else {
                 upArgs += " --abort-on-container-exit"
             }
-            dockerCompose(upArgs, envFileOpts)
+            try {
+                dockerCompose(upArgs, envFileOpts)
+            } catch (hudson.AbortException e) {
+                echo '--> Showing all log lines:'
+                dockerCompose('logs --tail=-1', envFileOpts)
+                throw e
+            }
             echo "Service status:"
             dockerCompose("ps", envFileOpts)
             if (logTailCount) {
-                sleep 3 // Short sleep to give logs time to populate
                 echo "--> Showing last ${logTailCount} log lines:"
                 dockerCompose("logs --tail=${logTailCount}", envFileOpts)
             }

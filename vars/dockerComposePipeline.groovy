@@ -48,12 +48,16 @@ def call(Map configParams = [:]) {
             if (config.persistentWorkspace) {
                 def jobNameParts = env.JOB_NAME.tokenize('/')
                 def repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts[0]
-                def appRoot = "${config.persistentWorkspace}/${repoName}"
-                def deploymentPath = "${appRoot}/${env.BUILD_NUMBER}"
+                def deploymentPath = "${config.persistentWorkspace}/${repoName}"
                 dir(deploymentPath) {
                     deploymentFlow(config)
                 }
-                cleanupPersistentWorkspace(appRoot)
+                stage('Cleanup') {
+                    if (params.COMPOSE_DOWN) {
+                        echo 'Cleaning up persistent workspace folder...'
+                        sh "rm -rf '${deploymentPath}'"
+                    }
+                }
             } else { // Run the Docker Compose flow within the regular ephemeral agent workspace
                 deploymentFlow(config)
             }
@@ -257,21 +261,4 @@ private void dockerCompose(String args, String envFileOpts = '') {
         command += " ${params.TARGET_SERVICES.trim()}"
     }
     sh(command)
-}
-
-/**
- * Cleans up old build directories in a persistent workspace.
- */
-private void cleanupPersistentWorkspace(String appRoot) {
-    stage('Cleanup') {
-        if (params.COMPOSE_DOWN) {
-            echo "Cleaning up all persistent workspace folders..."
-            sh "rm -rf '${appRoot}'"
-        } else {
-            echo "Cleaning up old build directories..."
-            dir(appRoot) {
-                sh "find . -maxdepth 1 -mindepth 1 -type d ! -name '${env.BUILD_NUMBER}' -exec rm -rf {} +"
-            }
-        }
-    }
 }

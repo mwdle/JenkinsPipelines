@@ -11,8 +11,7 @@ This pipeline library automates Docker Compose workflows inside Jenkins. Key fea
 1. **Dynamic Parameterization:** Configure pipeline behavior at runtime with Jenkins build parameters for teardown, restart, build, image pull, and service targeting.
 2. **Secrets Integration:** Securely injects `.env` files stored in Jenkins file credentials into Docker Compose.
 3. **Custom Hooks:** Add custom logic via a post-checkout hook closure.
-4. **Persistent Workspaces:** Maintain consistent bind-mounted workspace folders on the host to support relative mounts in compose files.
-5. **Self-Cleaning Workspaces:** Automatically clean old build directories after successful runs, ensuring efficient disk usage.
+4. **Static Persistent Workspaces:** Optionally deploys repositories into stable, consistent bind-mounted directories on the host. This preserves relative bind mounts for persistent data and prevents race conditions during targeted redeployments.
 
 ---
 
@@ -159,11 +158,13 @@ dockerComposePipeline(
 
 ---
 
-## Persistent Workspace Setup
+## Persistent Workspace Setup (Optional)
 
-To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, the persistent workspace path must exist on both the Jenkins agent container and the Docker host.
+By default, the pipeline runs inside a standard, ephemeral Jenkins workspace. However, if your `docker-compose.yml` relies on **relative bind mounts** (e.g., `./config:/app/config`), you must configure a persistent workspace so Docker Compose has a stable directory on the host machine.
 
-1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure the agent template to bind mount the persistent workspace directory from the host to the agent, ensuring the source and destination paths are identical.
+To enable this feature, the persistent workspace path must exist on both the Jenkins agent container and the Docker host.
+
+1. **Configure Jenkins Agent:** In your Jenkins configuration (e.g., via JCasC), configure your Docker agent template(s) to bind mount the persistent workspace directory from the host to the agent, ensuring the source and destination paths are identical.
 
    _Example JCasC agent template:_
 
@@ -175,17 +176,19 @@ To support relative bind mounts (e.g. `./file`) in your `docker-compose.yml`, th
              # ... other agent config ...
              mountsString: |-
                type=bind,source=/var/run/docker.sock,destination=/var/run/docker.sock
-               type=bind,source=/home/myusername/docker/workspace,destination=/home/myusername/docker/workspace
+               type=bind,source=/home/myusername/docker/deployments,destination=/home/myusername/docker/deployments
    ```
 
-2. **Set Persistent Workspace:** In your Jenkinsfile, set the `persistentWorkspace` parameter to the same path used in the agent configuration.
+2. **Set Persistent Workspace:** In your Jenkinsfile, set the `persistentWorkspace` parameter to the same folder used in the agent configuration or a subfolder of that folder, e.g.
 
    ```groovy
-   persistentWorkspace: '/home/myusername/docker/workspace'
+   persistentWorkspace: '/home/myusername/docker/deployments'
+   // or
+   persistentWorkspace: '/home/myusername/docker/deployments/subfolder'
    ```
 
-> [!WARNING]
-> The persistent workspace path must be dedicated to Jenkins. The pipeline will **delete old build directories** in this path to clean up after successful runs.
+> [!NOTE]
+> **Static Deployments:** When this feature is enabled, the pipeline deploys directly to a static repository folder (e.g., `/persistentWorkspace/your-repo-name`). This preserves your persistent data and relative bind mounts across updates. The pipeline will **only** delete this directory if you run a job with the `COMPOSE_DOWN` parameter set to `true`.
 
 ---
 

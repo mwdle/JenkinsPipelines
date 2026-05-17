@@ -4,7 +4,7 @@
  * This pipeline library automates Docker Compose workflows inside Jenkins.
  * Full usage instructions, configuration options, and examples are in the README.
  */
-def call(Map configParams = [:]) {
+void call(Map configParams = [:]) {
     // Centralized configuration with defaults. User-provided config overrides defaults.
     Map defaults = [
         agentLabel:              'docker',
@@ -47,6 +47,9 @@ def call(Map configParams = [:]) {
             if (config.persistentWorkspace) {
                 List jobNameParts = env.JOB_NAME.tokenize('/')
                 String repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts.first()
+                if (!repoName?.trim()) {
+                    error("Could not resolve repository name from JOB_NAME (${env.JOB_NAME}). Halting to prevent potentially unsafe file operations.")
+                }
                 String deploymentPath = "${config.persistentWorkspace}/${repoName}"
                 try {
                     dir(deploymentPath) {
@@ -114,14 +117,8 @@ private void setupJobProperties(Map config) {
  * Validates all config map parameters for correctness.
  */
 private void validateConfig(Map config) {
-    if (config.persistentWorkspace) {
-        if (!(config.persistentWorkspace instanceof CharSequence)) {
-            error("Config Error: 'persistentWorkspace' must be a String path.")
-        }
-        List forbiddenPaths = ['/', '/home']
-        if (forbiddenPaths.contains(config.persistentWorkspace.trim())) {
-            error("Config Error: 'persistentWorkspace' cannot be a system root path (${config.persistentWorkspace}).")
-        }
+    if (config.persistentWorkspace && !(config.persistentWorkspace instanceof CharSequence)) {
+        error("Config Error: 'persistentWorkspace' must be a String path.")
     }
     if (config.alertEmail && !config.alertEmail.contains('@')) {
         error("Config Error: 'alertEmail' (${config.alertEmail}) does not look like a valid email address.")

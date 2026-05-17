@@ -112,7 +112,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | Parameter                 | Type         | Description                                                                                                                                                         |
 | ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                                                                                                                          |
-| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `false`).                                                                                                            |
+| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `true` to ensure safe deployments when not configured).                                                              |
 | `disableIndexTriggers`    | Boolean      | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` or `additionalTriggers` (default: `false`).       |
 | `cronSchedule`            | String       | Cron expression for periodic builds.                                                                                                                                |
 | `additionalTriggers`      | List         | List of Jenkins trigger objects to add alongside `cronSchedule`. Must use **scripted pipeline** syntax (e.g., `[$class: 'GenericTrigger', ...]`, `pollSCM('...')`). |

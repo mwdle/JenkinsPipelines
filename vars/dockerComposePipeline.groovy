@@ -9,7 +9,7 @@ def call(Map configParams = [:]) {
     // Centralized configuration with defaults. User-provided config overrides defaults.
     def defaults = [
         agentLabel:              'docker',
-        disableConcurrentBuilds: false,
+        disableConcurrentBuilds: true,
         disableIndexTriggers:    false,
         cronSchedule:            null,
         additionalTriggers:      [],

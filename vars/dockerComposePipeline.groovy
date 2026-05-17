@@ -5,9 +5,8 @@
  * Full usage instructions, configuration options, and examples are in the README.
  */
 def call(Map configParams = [:]) {
-
     // Centralized configuration with defaults. User-provided config overrides defaults.
-    def defaults = [
+    Map defaults = [
         agentLabel:              'docker',
         disableConcurrentBuilds: true,
         disableIndexTriggers:    false,
@@ -26,7 +25,7 @@ def call(Map configParams = [:]) {
         defaultLogTailCount:     '0',
         defaultDetached:         true
     ]
-    def config = defaults + configParams
+    Map config = defaults + configParams
 
     validateConfig(config)
 
@@ -35,7 +34,7 @@ def call(Map configParams = [:]) {
 
     // First build registers parameters and exits
     if (env.BUILD_NUMBER == '1') {
-        echo "Jenkins is initializing this job. Please re-run to proceed."
+        echo 'Jenkins is initializing this job. Please re-run to proceed.'
         currentBuild.result = 'NOT_BUILT'
         return
     }
@@ -46,9 +45,9 @@ def call(Map configParams = [:]) {
     node(config.agentLabel) {
         try {
             if (config.persistentWorkspace) {
-                def jobNameParts = env.JOB_NAME.tokenize('/')
-                def repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts[0]
-                def deploymentPath = "${config.persistentWorkspace}/${repoName}"
+                List jobNameParts = env.JOB_NAME.tokenize('/')
+                String repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts.first()
+                String deploymentPath = "${config.persistentWorkspace}/${repoName}"
                 try {
                     dir(deploymentPath) {
                         deploymentFlow(config)
@@ -68,7 +67,7 @@ def call(Map configParams = [:]) {
                 deploymentFlow(config)
             }
         } catch (err) {
-            def isAborted = err instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
+            boolean isAborted = err instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
             if (config.alertEmail && !isAborted) {
                 mail to: config.alertEmail,
                      subject: "🚨 Build Failure - ${env.JOB_NAME} #${env.BUILD_NUMBER}",
@@ -83,7 +82,7 @@ def call(Map configParams = [:]) {
  * Defines and applies all job properties, including parameters and triggers.
  */
 private void setupJobProperties(Map config) {
-    def jobProperties = [
+    List jobProperties = [
         parameters([
             booleanParam(name: 'COMPOSE_DOWN', defaultValue: config.defaultComposeDown, description: 'Action: Stop and remove services and then exit the pipeline.'),
             booleanParam(name: 'COMPOSE_RESTART', defaultValue: config.defaultComposeRestart, description: 'Action: Restart services and then exit the pipeline.'),
@@ -99,10 +98,10 @@ private void setupJobProperties(Map config) {
     if (config.disableConcurrentBuilds) {
         jobProperties.add(disableConcurrentBuilds())
     }
-    def cronSchedule = config.cronSchedule?.trim()
-    def triggers = []
-    if (cronSchedule) triggers.add(cron(cronSchedule))
-    if (config.additionalTriggers) triggers.addAll(config.additionalTriggers)
+    String cronSchedule = config.cronSchedule?.trim()
+    List triggers = []
+    if (cronSchedule) { triggers.add(cron(cronSchedule)) }
+    if (config.additionalTriggers) { triggers.addAll(config.additionalTriggers) }
     if (config.disableIndexTriggers) {
         jobProperties.add(overrideIndexTriggers(false))
     }
@@ -119,7 +118,7 @@ private void validateConfig(Map config) {
         if (!(config.persistentWorkspace instanceof CharSequence)) {
             error("Config Error: 'persistentWorkspace' must be a String path.")
         }
-        def forbiddenPaths = ['/', '/home']
+        List forbiddenPaths = ['/', '/home']
         if (forbiddenPaths.contains(config.persistentWorkspace.trim())) {
             error("Config Error: 'persistentWorkspace' cannot be a system root path (${config.persistentWorkspace}).")
         }
@@ -133,7 +132,7 @@ private void validateConfig(Map config) {
     if (config.postCheckoutSteps && !(config.postCheckoutSteps instanceof Closure)) {
         error("Config Error: 'postCheckoutSteps' must be a code block { ... }.")
     }
-    def booleanParams = [
+    List booleanParams = [
         'disableConcurrentBuilds',
         'disableIndexTriggers',
         'defaultComposeDown',
@@ -156,10 +155,10 @@ private void validateConfig(Map config) {
  */
 private void validateParameters() {
     if (!params.TARGET_SERVICES.matches(/^[a-zA-Z0-9\s._-]*$/)) {
-        error("Invalid characters in TARGET_SERVICES. Halting for security reasons.")
+        error('Invalid characters in TARGET_SERVICES. Halting for security reasons.')
     }
     if (!params.LOG_TAIL_COUNT.matches(/^-?\d+$/)) {
-        error("LOG_TAIL_COUNT must be a number.")
+        error('LOG_TAIL_COUNT must be a number.')
     }
 }
 
@@ -175,20 +174,20 @@ private void deploymentFlow(Map config) {
         config.postCheckoutSteps()
     }
     if (config.envFileCredentialIds) {
-        echo "Secrets integration enabled."
-        def credentialBindings = []
+        echo 'Secrets integration enabled.'
+        List credentialBindings = []
         config.envFileCredentialIds.eachWithIndex { credId, i ->
-            def variableName = "COMPOSE_ENV_${i}"
+            String variableName = "COMPOSE_ENV_${i}"
             credentialBindings.add(file(credentialsId: credId, variable: variableName))
         }
         withCredentials(credentialBindings) {
-            def envFileOpts = (0..<config.envFileCredentialIds.size()).collect { i ->
+            String envFileOpts = (0..<config.envFileCredentialIds.size()).collect { i ->
                 '--env-file $COMPOSE_ENV_' + i
             }.join(' ')
             composeStages(envFileOpts)
         }
     } else {
-        echo "Secrets integration disabled."
+        echo 'Secrets integration disabled.'
         composeStages()
     }
 }
@@ -197,48 +196,48 @@ private void deploymentFlow(Map config) {
  * Defines the core teardown, build, and run logic.
  */
 private void composeStages(String envFileOpts = '') {
-    def logTailCount = params.LOG_TAIL_COUNT.toInteger()
+    int logTailCount = params.LOG_TAIL_COUNT.toInteger()
     stage('Validate') {
-        echo "=== Validating Docker Compose Configuration ==="
-        dockerCompose("config --quiet", envFileOpts)
+        echo '=== Validating Docker Compose Configuration ==='
+        dockerCompose('config --quiet', envFileOpts)
     }
     if (params.COMPOSE_DOWN) {
         stage('Teardown') {
-            echo "=== Tearing Down Services ==="
-            dockerCompose("down", envFileOpts)
+            echo '=== Tearing Down Services ==='
+            dockerCompose('down', envFileOpts)
         }
     } else if (params.COMPOSE_RESTART) {
         stage('Restart') {
-            echo "=== Restarting Services ==="
-            dockerCompose("restart", envFileOpts)
+            echo '=== Restarting Services ==='
+            dockerCompose('restart', envFileOpts)
         }
     } else {
         if (params.COMPOSE_BUILD) {
             stage('Build') {
-                echo "=== Building Docker Images ==="
-                def buildArgs = "build"
+                echo '=== Building Docker Images ==='
+                String buildArgs = 'build'
                 if (params.NO_CACHE) {
-                    echo "Cache disabled for this build."
-                    buildArgs += " --no-cache"
+                    echo 'Cache disabled for this build.'
+                    buildArgs += ' --no-cache'
                 }
                 dockerCompose(buildArgs, envFileOpts)
             }
         }
         stage('Up') {
-            echo "=== Starting Services ==="
+            echo '=== Starting Services ==='
             if (params.FORCE_RECREATE) {
                 echo 'Force recreate requested. Executing `docker compose down` before `up`.'
-                dockerCompose("down", envFileOpts)
+                dockerCompose('down', envFileOpts)
             }
             if (params.PULL_IMAGES) {
-                echo "Pulling latest images."
-                dockerCompose("pull --ignore-pull-failures", envFileOpts)
+                echo 'Pulling latest images.'
+                dockerCompose('pull --ignore-pull-failures', envFileOpts)
             }
-            def upArgs = "up"
+            String upArgs = 'up'
             if (params.DETACHED) {
-                upArgs += " -d --wait"
+                upArgs += ' -d --wait'
             } else {
-                upArgs += " --abort-on-container-exit"
+                upArgs += ' --abort-on-container-exit'
             }
             try {
                 dockerCompose(upArgs, envFileOpts)
@@ -247,8 +246,8 @@ private void composeStages(String envFileOpts = '') {
                 dockerCompose('logs --tail=-1', envFileOpts)
                 throw e
             }
-            echo "Service status:"
-            dockerCompose("ps", envFileOpts)
+            echo 'Service status:'
+            dockerCompose('ps', envFileOpts)
             if (logTailCount) {
                 echo "--> Showing last ${logTailCount} log lines:"
                 dockerCompose("logs --tail=${logTailCount}", envFileOpts)
@@ -261,7 +260,7 @@ private void composeStages(String envFileOpts = '') {
  * Runs a docker compose command with optional environment file overrides.
  */
 private void dockerCompose(String args, String envFileOpts = '') {
-    def command = "docker compose --progress=plain ${envFileOpts} ${args}"
+    String command = "docker compose --progress=plain ${envFileOpts} ${args}"
     // The 'config' command does not accept service names, but all others do.
     if (!args.startsWith('config') && params.TARGET_SERVICES?.trim()) {
         command += " ${params.TARGET_SERVICES.trim()}"

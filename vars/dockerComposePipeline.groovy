@@ -49,13 +49,19 @@ def call(Map configParams = [:]) {
                 def jobNameParts = env.JOB_NAME.tokenize('/')
                 def repoName = jobNameParts.size() > 1 ? jobNameParts[-2] : jobNameParts[0]
                 def deploymentPath = "${config.persistentWorkspace}/${repoName}"
-                dir(deploymentPath) {
-                    deploymentFlow(config)
-                }
-                stage('Cleanup') {
-                    if (params.COMPOSE_DOWN) {
-                        echo 'Cleaning up persistent workspace folder...'
-                        sh "rm -rf '${deploymentPath}'"
+                try {
+                    dir(deploymentPath) {
+                        deploymentFlow(config)
+                    }
+                    stage('Cleanup') {
+                        if (params.COMPOSE_DOWN) {
+                            echo 'Cleaning up persistent workspace folder...'
+                            sh "rm -rf '${deploymentPath}'"
+                        }
+                    }
+                } finally {
+                    dir("${deploymentPath}@tmp") {
+                        deleteDir()
                     }
                 }
             } else { // Run the Docker Compose flow within the regular ephemeral agent workspace

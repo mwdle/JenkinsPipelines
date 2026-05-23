@@ -37,7 +37,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 | Parameter               | Type    | Description                                                                                                     |
 | ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| `REGISTRY_HOST`         | String  | Registry hostname (e.g., `"gitea.example.com"`, `"nexus.local:5000"`). Leave empty for Docker Hub.              |
+| `REGISTRY_HOST`         | String  | Registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Leave empty for Docker Hub.              |
 | `IMAGE_NAME`            | String  | Docker image name to build and push (e.g., `"my-user/my-app"`). Combined with `REGISTRY_HOST` for the full ref. |
 | `TAG`                   | String  | Tag to apply to the image (e.g., `"latest"`, `"v1.0.0"`).                                                       |
 | `DOCKERFILE`            | String  | Path to the Dockerfile to build.                                                                                |
@@ -53,7 +53,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | `cronSchedule`               | String  | Cron expression for periodic builds.                                                                                                  |
 | `alertEmail`                 | String  | Email address for failure notifications (default: `null`).                                                                            |
 | `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries.                                                                                 |
-| `defaultRegistryHost`        | String  | Default registry hostname (e.g., `"gitea.example.com"`, `"nexus.local:5000"`). Empty defaults to Docker Hub.                          |
+| `defaultRegistryHost`        | String  | Default registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Empty defaults to Docker Hub.                          |
 | `defaultImageName`           | String  | Default Docker image name.                                                                                                            |
 | `defaultDockerfile`          | String  | Default Dockerfile path.                                                                                                              |
 | `defaultTag`                 | String  | Default Docker image tag.                                                                                                             |
@@ -106,7 +106,7 @@ dockerImagePipeline(
     cronSchedule: '0 0 * * *',
     alertEmail: 'admin@example.com',
     defaultDockerCredentialsId: 'container-registry-creds',
-    defaultRegistryHost: 'gitea.example.com',
+    defaultRegistryHost: 'git.example.com',
     defaultImageName: 'my-org/my-app',
     defaultDockerfile: 'Dockerfile',
     defaultTag: 'latest',

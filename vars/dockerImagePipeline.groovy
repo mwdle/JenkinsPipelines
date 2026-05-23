@@ -57,7 +57,7 @@ def call(Map parameters = [:]) {
 private void setupJobProperties(Map config) {
     def jobProperties = [
         parameters([
-            stringParam(name: 'REGISTRY_HOST', defaultValue: config.defaultRegistryHost, description: 'Registry hostname (e.g., "gitea.example.com" or "nexus.local:5000"). Leave empty for Docker Hub.'),
+            stringParam(name: 'REGISTRY_HOST', defaultValue: config.defaultRegistryHost, description: 'Registry hostname (e.g., "git.example.com" or "nexus.local:5000"). Leave empty for Docker Hub.'),
             stringParam(name: 'IMAGE_NAME', defaultValue: config.defaultImageName, description: 'Docker image to build and push'),
             credentials(
                 name: 'DOCKER_CREDENTIALS_ID',

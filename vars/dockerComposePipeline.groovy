@@ -89,7 +89,7 @@ private void setupJobProperties(Map config) {
         parameters([
             booleanParam(name: 'COMPOSE_DOWN', defaultValue: config.defaultComposeDown, description: 'Action: Stop and remove services and then exit the pipeline.'),
             booleanParam(name: 'COMPOSE_RESTART', defaultValue: config.defaultComposeRestart, description: 'Action: Restart services and then exit the pipeline.'),
-            booleanParam(name: 'FORCE_RECREATE', defaultValue: config.defaultForceRecreate, description: 'Modifier: Run `down` before `up` to force a clean start.'),
+            booleanParam(name: 'FORCE_RECREATE', defaultValue: config.defaultForceRecreate, description: "Modifier: Recreate containers even if their configuration and image haven't changed."),
             booleanParam(name: 'COMPOSE_BUILD', defaultValue: config.defaultComposeBuild, description: 'Modifier: Build image(s) from Dockerfile(s) before running `up`.'),
             booleanParam(name: 'NO_CACHE', defaultValue: config.defaultNoCache, description: 'Modifier: Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.'),
             booleanParam(name: 'PULL_IMAGES', defaultValue: config.defaultPullImages, description: 'Modifier: Run `pull` before `up` to fetch latest images.'),
@@ -201,7 +201,7 @@ private void composeStages(String envFileOpts = '') {
     if (params.COMPOSE_DOWN) {
         stage('Teardown') {
             echo '=== Tearing Down Services ==='
-            dockerCompose('down', envFileOpts)
+            dockerCompose('down --remove-orphans', envFileOpts)
         }
     } else if (params.COMPOSE_RESTART) {
         stage('Restart') {
@@ -222,15 +222,14 @@ private void composeStages(String envFileOpts = '') {
         }
         stage('Up') {
             echo '=== Starting Services ==='
-            if (params.FORCE_RECREATE) {
-                echo 'Force recreate requested. Executing `docker compose down` before `up`.'
-                dockerCompose('down', envFileOpts)
-            }
             if (params.PULL_IMAGES) {
                 echo 'Pulling latest images.'
                 dockerCompose('pull --ignore-pull-failures', envFileOpts)
             }
-            String upArgs = 'up'
+            String upArgs = 'up --remove-orphans'
+            if (params.FORCE_RECREATE) {
+                upArgs += ' --force-recreate'
+            }
             if (params.DETACHED) {
                 upArgs += ' -d --wait'
             } else {

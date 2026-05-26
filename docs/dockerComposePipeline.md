@@ -99,7 +99,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | ----------------- | ------- | ------------------------------------------------------------------------------ |
 | `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.                                           |
 | `COMPOSE_RESTART` | Boolean | Restart services, then exit.                                                   |
-| `FORCE_RECREATE`  | Boolean | Run `down` before `up` to force a clean start.                                 |
+| `FORCE_RECREATE`  | Boolean | Recreate containers even if their configuration and image haven't changed.     |
 | `COMPOSE_BUILD`   | Boolean | Build images before running `up`.                                              |
 | `NO_CACHE`        | Boolean | Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled. |
 | `PULL_IMAGES`     | Boolean | Pull latest images before running `up`.                                        |

@@ -18,9 +18,9 @@ void call(Map configParams = [:]) {
         defaultComposeDown:      false,
         defaultComposeRestart:   false,
         defaultForceRecreate:    false,
-        defaultComposeBuild:     false,
+        defaultComposeBuild:     true,
         defaultNoCache:          false,
-        defaultPullImages:       false,
+        defaultPullImages:       true,
         defaultTargetServices:   '',
         defaultLogTailCount:     '0',
         defaultDetached:         true

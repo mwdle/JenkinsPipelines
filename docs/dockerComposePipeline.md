@@ -45,7 +45,7 @@ Docker Compose supports environment variables in two ways:
 1. **Variable Substitution:** Docker Compose uses a default `.env` file in your project root to replace `${VAR}` in the compose file.
 2. **Container Environments:** The `env_file:` directive loads variables directly into containers.
 
-The pipeline securely provides environment files to Docker Compose at runtime using the --env-file flag. These files are sourced directly from Jenkins credentials and are never written to the workspace.
+The pipeline securely provides environment files to Docker Compose at runtime using the --env-file flag. These files are provided through Jenkins temporary credential files and are never stored in the repository workspace.
 This means that the secret injection does not support the `env_file:` directive within `docker-compose.yml` files.
 
 **To inject `.env` files at runtime**, pass a list of Jenkins file credential IDs via the `envFileCredentialIds` config key.
@@ -95,40 +95,40 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 ## Pipeline Parameters Cheatsheet
 
-| Parameter         | Type    | Description                                                                    |
-| ----------------- | ------- | ------------------------------------------------------------------------------ |
-| `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.                                           |
-| `COMPOSE_RESTART` | Boolean | Restart services, then exit.                                                   |
-| `FORCE_RECREATE`  | Boolean | Recreate containers even if their configuration and image haven't changed.     |
-| `COMPOSE_BUILD`   | Boolean | Build images before running `up`.                                              |
-| `NO_CACHE`        | Boolean | Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled. |
-| `PULL_IMAGES`     | Boolean | Pull latest images before running `up`.                                        |
-| `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`).                             |
-| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after `up` completes.                              |
-| `DETACHED`        | Boolean | Run services in detached (background) mode.                                    |
+| Parameter         | Type    | Description                                                                                                                                       |
+| ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `COMPOSE_DOWN`    | Boolean | Stop and remove services, then exit.                                                                                                              |
+| `COMPOSE_RESTART` | Boolean | Restart services, then exit.                                                                                                                      |
+| `FORCE_RECREATE`  | Boolean | Recreate containers even if their configuration and image haven't changed.                                                                        |
+| `COMPOSE_BUILD`   | Boolean | Build images before running `up`.                                                                                                                 |
+| `NO_CACHE`        | Boolean | Do not use cache when building images. Requires `COMPOSE_BUILD` to be enabled.                                                                    |
+| `PULL_IMAGES`     | Boolean | Attempt to pull updated images before running `up`. Pull failures are ignored so deployments containing build-only services can proceed normally. |
+| `TARGET_SERVICES` | String  | Services to target (e.g., `"nextcloud db redis"`). All compose operations will target only the given services, if provided.                       |
+| `LOG_TAIL_COUNT`  | String  | Number of log lines to show after `up` completes.                                                                                                 |
+| `DETACHED`        | Boolean | Run services in detached (background) mode.                                                                                                       |
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                 | Type         | Description                                                                                                                                                         |
-| ------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                                                                                                                          |
-| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `true` to ensure safe deployments when not configured).                                                              |
-| `disableIndexTriggers`    | Boolean      | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` or `additionalTriggers` (default: `false`).       |
-| `cronSchedule`            | String       | Cron expression for periodic builds.                                                                                                                                |
-| `additionalTriggers`      | List         | List of Jenkins trigger objects to add alongside `cronSchedule`. Must use **scripted pipeline** syntax (e.g., `[$class: 'GenericTrigger', ...]`, `pollSCM('...')`). |
-| `alertEmail`              | String       | Email address for failure notifications (default: `null`).                                                                                                          |
-| `postCheckoutSteps`       | Closure      | Hook to execute after checkout.                                                                                                                                     |
-| `defaultComposeDown`      | Boolean      | Default value for `COMPOSE_DOWN`.                                                                                                                                   |
-| `defaultComposeRestart`   | Boolean      | Default value for `COMPOSE_RESTART`.                                                                                                                                |
-| `defaultForceRecreate`    | Boolean      | Default value for `FORCE_RECREATE`.                                                                                                                                 |
-| `defaultComposeBuild`     | Boolean      | Default value for `COMPOSE_BUILD`.                                                                                                                                  |
-| `defaultNoCache`          | Boolean      | Default value for `NO_CACHE`.                                                                                                                                       |
-| `defaultPullImages`       | Boolean      | Default value for `PULL_IMAGES`.                                                                                                                                    |
-| `defaultTargetServices`   | String       | Default value for `TARGET_SERVICES`.                                                                                                                                |
-| `defaultLogTailCount`     | String       | Default value for `LOG_TAIL_COUNT`.                                                                                                                                 |
-| `defaultDetached`         | Boolean      | Default value for `DETACHED`.                                                                                                                                       |
-| `envFileCredentialIds`    | List<String> | Jenkins File credential IDs for `.env` files.                                                                                                                       |
-| `persistentWorkspace`     | String       | Path to bind-mounted workspace on host.                                                                                                                             |
+| Parameter                 | Type         | Description                                                                                                                                                                         |
+| ------------------------- | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentLabel`              | String       | Jenkins agent label (default: `"docker"`).                                                                                                                                          |
+| `disableConcurrentBuilds` | Boolean      | Prevent concurrent builds of the job (default: `true` to ensure safe deployments when not configured).                                                                              |
+| `disableIndexTriggers`    | Boolean      | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` or `additionalTriggers` (default: `false`).                       |
+| `cronSchedule`            | String       | Cron expression for periodic builds (default: `null`).                                                                                                                              |
+| `additionalTriggers`      | List         | List of Jenkins trigger objects to add alongside `cronSchedule`. Must use **scripted pipeline** syntax (e.g., `[$class: 'GenericTrigger', ...]`, `pollSCM('...')`) (default: `[]`). |
+| `alertEmail`              | String       | Email address for failure notifications (default: `null`).                                                                                                                          |
+| `postCheckoutSteps`       | Closure      | Hook to execute after checkout (default: `null`).                                                                                                                                   |
+| `defaultComposeDown`      | Boolean      | Default value for `COMPOSE_DOWN` (default: `false`).                                                                                                                                |
+| `defaultComposeRestart`   | Boolean      | Default value for `COMPOSE_RESTART` (default: `false`).                                                                                                                             |
+| `defaultForceRecreate`    | Boolean      | Default value for `FORCE_RECREATE` (default: `false`).                                                                                                                              |
+| `defaultComposeBuild`     | Boolean      | Default value for `COMPOSE_BUILD` (default: `true`).                                                                                                                                |
+| `defaultNoCache`          | Boolean      | Default value for `NO_CACHE` (default: `false`).                                                                                                                                    |
+| `defaultPullImages`       | Boolean      | Default value for `PULL_IMAGES` (default: `true`).                                                                                                                                  |
+| `defaultTargetServices`   | String       | Default value for `TARGET_SERVICES` (default: all).                                                                                                                                 |
+| `defaultLogTailCount`     | String       | Default value for `LOG_TAIL_COUNT` (default: `0`).                                                                                                                                  |
+| `defaultDetached`         | Boolean      | Default value for `DETACHED` (default: `true`).                                                                                                                                     |
+| `envFileCredentialIds`    | List<String> | Jenkins File credential IDs for `.env` files (default: `null`).                                                                                                                     |
+| `persistentWorkspace`     | String       | Path to bind-mounted workspace on host (default: `null`).                                                                                                                           |
 
 ---
 

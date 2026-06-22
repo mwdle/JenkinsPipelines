@@ -57,8 +57,13 @@ void call(Map configParams = [:]) {
                     }
                     stage('Cleanup') {
                         if (params.COMPOSE_DOWN) {
-                            echo 'Cleaning up persistent workspace folder...'
-                            sh "rm -rf '${deploymentPath}'"
+                            if (params.TARGET_SERVICES?.trim()) {
+                                echo "Partial teardown detected for services: '${params.TARGET_SERVICES}'."
+                                echo "Skipping directory removal to protect other running services and bind mounts."
+                            } else {
+                                echo 'Full teardown detected. Cleaning up persistent workspace folder...'
+                                sh "rm -rf '${deploymentPath}'"
+                            }
                         }
                     }
                 } finally {

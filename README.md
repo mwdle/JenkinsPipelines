@@ -13,6 +13,7 @@ Each pipeline can be easily integrated into your Jenkins projects via the Jenkin
 
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [dockerImagePipeline](docs/dockerImagePipeline.md)
+- [securityScanStep](docs/securityScanStep.md)
 
 ## Usage
 
@@ -28,7 +29,7 @@ Replace `[...]` with pipeline-specific configuration parameters.
 ## Requirements
 
 - Jenkins with Global Pipeline Libraries configured to include this repository.
-- Jenkins agents with necessary tools installed (e.g., `sh`, `git` - possibly others depending on the pipeline).
+- Jenkins agents with necessary tools installed (e.g., `sh` at minimum, others depending on the pipeline).
 - Appropriate credentials configured in Jenkins for pipelines that require them.
 
 ## Documentation
@@ -37,6 +38,7 @@ Detailed documentation for each pipeline is located in the `docs/` folder:
 
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [dockerImagePipeline](docs/dockerImagePipeline.md)
+- [securityScanStep](docs/securityScanStep.md)
 
 ## Contributing
 
@@ -50,7 +52,3 @@ To contribute code:
 3. Submit a pull request describing the changes and why they are needed.
 
 Please ensure your contributions follow existing style conventions and include tests where applicable.
-
-## License
-
-MIT License — see [LICENSE](LICENSE).

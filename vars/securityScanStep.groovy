@@ -7,8 +7,12 @@
 void call(String composeFile = null) {
     stage('Security Scan') {
         boolean issuesFound = false
-        echo '=== Scanning Repository Files ==='
-        if (!trivy('fs --no-progress --severity HIGH,CRITICAL --scanners vuln,secret,misconfig .')) {
+        echo '=== Scanning Repository Files for Vulnerabilities ==='
+        if (!trivy('fs --no-progress --severity HIGH,CRITICAL --scanners vuln .')) {
+            issuesFound = true
+        }
+        echo '=== Scanning Repository Files for Secrets and Misconfigurations ==='
+        if (!trivy('fs --no-progress --scanners secret,misconfig .')) {
             issuesFound = true
         }
         if (composeFile && fileExists(composeFile)) {

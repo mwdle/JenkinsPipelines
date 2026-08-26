@@ -9,7 +9,7 @@ void call(String composeFile = null) {
         boolean issuesFound = false
         
         echo '=== Scanning Repository Files ==='
-        if (!trivy('fs --scanners vuln,secret,misconfig .')) {
+        if (!trivy('fs --no-progress --scanners vuln,secret,misconfig .')) {
             issuesFound = true
         }
 
@@ -25,7 +25,7 @@ void call(String composeFile = null) {
                 composeData.services.each { name, service ->
                     if (service.image) {
                         echo "--> Scanning Image: ${service.image}"
-                        if (!trivy("image \"${service.image}\"")) {
+                        if (!trivy("image --no-progress \"${service.image}\"")) {
                             issuesFound = true
                         }
                     }
@@ -44,8 +44,10 @@ void call(String composeFile = null) {
  * Returns false if issues were found, true if clean.
  */
 private boolean trivy(String command) {
-    return ! sh(
-        script: "trivy ${command} --no-progress --severity HIGH,CRITICAL --exit-code 1",
-        returnStatus: true
-    )
+    return withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
+        return ! sh(
+            script: "trivy ${command} --no-progress --severity HIGH,CRITICAL --exit-code 1",
+            returnStatus: true
+        )
+    }
 }

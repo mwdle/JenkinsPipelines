@@ -35,7 +35,7 @@ void call(String composeFile = null) {
             }
         }
         if (issuesFound) {
-            unstable("Security scan found issues warranting attention. Please check logs.")
+            unstable("Security scan yielded issues warranting attention. Please check logs.")
         }
     }
 }

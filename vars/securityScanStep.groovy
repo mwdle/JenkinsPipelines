@@ -7,12 +7,10 @@
 void call(String composeFile = null) {
     stage('Security Scan') {
         boolean issuesFound = false
-        
         echo '=== Scanning Repository Files ==='
-        if (!trivy('fs --no-progress --scanners vuln,secret,misconfig .')) {
+        if (!trivy('fs --no-progress --severity HIGH,CRITICAL --scanners vuln,secret,misconfig .')) {
             issuesFound = true
         }
-
         if (composeFile && fileExists(composeFile)) {
             echo "=== Scanning Compose Config: ${composeFile} ==="
             if (!trivy("config ${composeFile}")) {
@@ -25,28 +23,27 @@ void call(String composeFile = null) {
                 composeData.services.each { name, service ->
                     if (service.image) {
                         echo "--> Scanning Image: ${service.image}"
-                        if (!trivy("image --no-progress \"${service.image}\"")) {
+                        if (!trivy("image --severity HIGH,CRITICAL --no-progress \"${service.image}\"")) {
                             issuesFound = true
                         }
                     }
                 }
             }
         }
-
         if (issuesFound) {
-            unstable("Security scan found HIGH or CRITICAL issues. Check logs.")
+            unstable("Security scan found issues warranting attention. Please check logs.")
         }
     }
 }
 
 /**
- * Runs a Trivy command. 
- * Returns false if issues were found, true if clean.
+ * Runs a Trivy command.
+ * Returns false if issues warranting attention were found, true otherwise.
  */
 private boolean trivy(String command) {
     return withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
         return ! sh(
-            script: "trivy ${command} --severity HIGH,CRITICAL --exit-code 1",
+            script: "trivy ${command} --exit-code 1",
             returnStatus: true
         )
     }

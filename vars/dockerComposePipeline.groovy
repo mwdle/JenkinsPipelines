@@ -225,7 +225,7 @@ private void composeStages(String envFileOpts = '') {
                 dockerCompose(buildArgs, envFileOpts)
             }
         }
-        stage('Up') {
+        stage('Deploy') {
             echo '=== Starting Services ==='
             if (params.PULL_IMAGES) {
                 echo 'Pulling latest images.'

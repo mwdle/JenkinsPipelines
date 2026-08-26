@@ -46,7 +46,7 @@ void call(String composeFile = null) {
 private boolean trivy(String command) {
     return withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
         return ! sh(
-            script: "trivy ${command} --no-progress --severity HIGH,CRITICAL --exit-code 1",
+            script: "trivy ${command} --severity HIGH,CRITICAL --exit-code 1",
             returnStatus: true
         )
     }

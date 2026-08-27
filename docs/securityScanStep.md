@@ -50,6 +50,6 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 @Library("JenkinsPipelines") _
 // Basic usage (scans repository files only)
 securityScan()
-// Advanced usage (scans repository files, plus Compose IaC and referenced images)
+// Advanced usage (scans repository files, Docker Compose configurations and referenced images)
 securityScan("docker-compose.yml")
 ```

@@ -12,6 +12,7 @@ def call(Map parameters = [:]) {
         disableIndexTriggers:       false,
         cronSchedule:               null,
         alertEmail:                 null,
+        postCheckoutSteps:          null,
         // Parameter defaults
         defaultDockerCredentialsId: 'docker-hub',
         defaultRegistryHost:        '',
@@ -39,7 +40,7 @@ def call(Map parameters = [:]) {
 
     node(config.agentLabel) {
         try {
-            imageBuildFlow()
+            imageBuildFlow(config)
         } catch (err) {
             if (config.alertEmail) {
                 mail to: config.alertEmail,
@@ -88,6 +89,9 @@ private void validateConfig(Map config) {
     if (config.alertEmail && !config.alertEmail.contains('@')) {
         error("Config Error: 'alertEmail' (${config.alertEmail}) does not look like a valid email address.")
     }
+    if (config.postCheckoutSteps && !(config.postCheckoutSteps instanceof Closure)) {
+        error("Config Error: 'postCheckoutSteps' must be a code block { ... }.")
+    }
     def booleanParams = [
         'disableIndexTriggers',
         'defaultNoCache'
@@ -120,11 +124,14 @@ private void validateParameters() {
 /**
  * Defines the core logic for checking out, building, and pushing the Docker image.
  */
-private void imageBuildFlow() {
+private void imageBuildFlow(Map config) {
     stage('Checkout') {
         checkout scm
     }
-
+    // If a post-checkout closure was provided, execute it
+    if (config.postCheckoutSteps) {
+        config.postCheckoutSteps()
+    }
     def gitSha = sh(script: "git rev-parse --short HEAD", returnStdout: true).trim()
     def registryHost = params.REGISTRY_HOST ?: ''
     def imageName = params.IMAGE_NAME

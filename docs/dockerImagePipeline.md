@@ -37,7 +37,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 | Parameter               | Type    | Description                                                                                                     |
 | ----------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
-| `REGISTRY_HOST`         | String  | Registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Leave empty for Docker Hub.              |
+| `REGISTRY_HOST`         | String  | Registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Leave empty for Docker Hub.                |
 | `IMAGE_NAME`            | String  | Docker image name to build and push (e.g., `"my-user/my-app"`). Combined with `REGISTRY_HOST` for the full ref. |
 | `TAG`                   | String  | Tag to apply to the image (e.g., `"latest"`, `"v1.0.0"`).                                                       |
 | `DOCKERFILE`            | String  | Path to the Dockerfile to build.                                                                                |
@@ -52,8 +52,9 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | `disableIndexTriggers`       | Boolean | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` (default: `false`). |
 | `cronSchedule`               | String  | Cron expression for periodic builds.                                                                                                  |
 | `alertEmail`                 | String  | Email address for failure notifications (default: `null`).                                                                            |
+| `postCheckoutSteps`          | Closure | Hook to execute after checkout (default: `null`).                                                                                     |
 | `defaultDockerCredentialsId` | String  | Default Jenkins credentials ID for Docker registries.                                                                                 |
-| `defaultRegistryHost`        | String  | Default registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Empty defaults to Docker Hub.                          |
+| `defaultRegistryHost`        | String  | Default registry hostname (e.g., `"git.example.com"`, `"nexus.local:5000"`). Empty defaults to Docker Hub.                            |
 | `defaultImageName`           | String  | Default Docker image name.                                                                                                            |
 | `defaultDockerfile`          | String  | Default Dockerfile path.                                                                                                              |
 | `defaultTag`                 | String  | Default Docker image tag.                                                                                                             |
@@ -105,6 +106,12 @@ dockerImagePipeline(
     disableIndexTriggers: false,
     cronSchedule: '0 0 * * *',
     alertEmail: 'admin@example.com',
+    postCheckoutSteps: {
+        echo "Running custom post-checkout steps..."
+        stage('Security Scan') {
+            securityScanStep()
+        }
+    },
     defaultDockerCredentialsId: 'container-registry-creds',
     defaultRegistryHost: 'git.example.com',
     defaultImageName: 'my-org/my-app',

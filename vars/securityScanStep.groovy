@@ -6,49 +6,25 @@
  */
 void call(String composeFile = null) {
     stage('Security Scan') {
-        boolean issuesFound = false
-        echo '=== Scanning Repository Files for Vulnerabilities ==='
-        if (!trivy('fs --no-progress --severity HIGH,CRITICAL --scanners vuln .')) {
-            issuesFound = true
-        }
-        echo '=== Scanning Repository Files for Secrets and Misconfigurations ==='
-        if (!trivy('fs --no-progress --scanners secret,misconfig .')) {
-            issuesFound = true
-        }
+        trivy('fs --no-progress --severity HIGH,CRITICAL --scanners vuln .', 'trivy-fs-vuln')
+        trivy('fs --no-progress --scanners secret,misconfig .', 'trivy-fs-misconfig-secret')
         if (composeFile && fileExists(composeFile)) {
-            echo "=== Scanning Compose Config: ${composeFile} ==="
-            if (!trivy("config ${composeFile}")) {
-                issuesFound = true
-            }
-
-            echo '=== Scanning Compose Images ==='
+            trivy("config ${composeFile}", 'trivy-compose-config')
             def composeData = readYaml file: composeFile
             if (composeData?.services) {
                 composeData.services.each { name, service ->
                     if (service.image) {
-                        echo "--> Scanning Image: ${service.image}"
-                        if (!trivy("image --severity HIGH,CRITICAL --no-progress \"${service.image}\"")) {
-                            issuesFound = true
-                        }
+                        trivy("image --severity HIGH,CRITICAL --no-progress \"${service.image}\"", "trivy-image-${name}")
                     }
                 }
             }
         }
-        if (issuesFound) {
-            unstable("Security scan yielded issues warranting attention. Please check logs.")
-        }
+        recordIssues tool: trivy(pattern: 'trivy-*.json')
     }
 }
 
-/**
- * Runs a Trivy command.
- * Returns false if issues warranting attention were found, true otherwise.
- */
-private boolean trivy(String command) {
-    return withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
-        return ! sh(
-            script: "trivy ${command} --exit-code 1",
-            returnStatus: true
-        )
+private void trivy(String command, String outputFile) {
+    withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
+        sh script: "trivy ${command} --format json --output ${outputFile}.json"
     }
 }

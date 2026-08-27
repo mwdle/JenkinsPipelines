@@ -7,7 +7,7 @@ A shared Jenkins pipeline library containing multiple reusable pipeline definiti
 This repository contains Jenkins pipeline libraries implemented as Groovy scripts in the `vars/` directory,
 with corresponding documentation stored under the `docs/` folder.
 
-Each pipeline can be easily integrated into your Jenkins projects via the Jenkins Shared Library mechanism.
+Each function can be easily integrated into your Jenkins projects via the Jenkins Shared Library mechanism.
 
 ### Included Pipelines
 
@@ -17,20 +17,21 @@ Each pipeline can be easily integrated into your Jenkins projects via the Jenkin
 
 ## Usage
 
-To use a pipeline in this library, add it to your `Jenkinsfile`, for example:
+To use a tool from this library, add it to your `Jenkinsfile`, for example:
 
 ```groovy
 @Library("JenkinsPipelines") _
 dockerComposePipeline([...])
 ```
 
-Replace `[...]` with pipeline-specific configuration parameters.
+Replace `[...]` with pipeline or step specific configuration parameters.
 
 ## Requirements
 
 - Jenkins with Global Pipeline Libraries configured to include this repository.
 - Jenkins agents with necessary tools installed (e.g., `sh` at minimum, others depending on the pipeline).
 - Appropriate credentials configured in Jenkins for pipelines that require them.
+- The [Warnings Plugin](https://plugins.jenkins.io/warnings-ng/) for Jenkins (if using the security scan function)
 
 ## Documentation
 

@@ -11,7 +11,7 @@ This step acts as a lightweight security monitor that provides insights without 
 1. **Filesystem & Secret Scanning:** Scans repository dependencies, Dockerfiles, and code for known vulnerabilities, misconfigurations, and leaked secrets using `trivy fs`.
 2. **Compose Integration:** Optionally parses a specified Docker Compose file to scan both the IaC definition (`trivy config`) and all referenced container images (`trivy image`).
 3. **Native UI Integration:** Outputs all findings in Trivy's native JSON format and uses the Jenkins Warnings Next Generation plugin to generate dedicated security dashboards, trend graphs, and line-level code highlighting.
-4. **Non-Blocking Execution:** Pipeline execution will continue regardless of the number or severity of vulnerabilities found. This ensures automated deployments (especially for third-party public images in homelabs) are never blocked by upstream CVEs outside of your control.
+4. **Non-Blocking Warnings:** Scans run without interrupting pipeline execution. If issues are found, the build is gracefully marked as **`UNSTABLE`** (yellow) in Jenkins via a quality gate, giving you clean visual tracking on your dashboard without breaking your automated deployments.
 
 ---
 

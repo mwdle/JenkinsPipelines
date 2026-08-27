@@ -73,14 +73,6 @@ dockerComposePipeline(
 
 Add this library to your Jenkins **Global Pipeline Libraries** configuration
 
-### Example: Custom Post-Checkout Hook
-
-```groovy
-postCheckoutSteps: {
-    sh "git submodule update --init --recursive"
-}
-```
-
 ---
 
 ## System Requirements
@@ -226,7 +218,9 @@ dockerComposePipeline(
     alertEmail: 'admin@example.com',
     postCheckoutSteps: {
         echo "Running custom post-checkout steps..."
-        sh "git submodule update --init --recursive"
+        stage('Security Scan') {
+            securityScanStep()
+        }
     },
     defaultComposeDown: false,
     defaultComposeRestart: false,

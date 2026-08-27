@@ -1,6 +1,6 @@
 # JenkinsPipelines
 
-A shared Jenkins pipeline library containing multiple reusable pipeline definitions.
+A shared Jenkins pipeline library containing multiple reusable pipelines and functions.
 
 ## Overview
 

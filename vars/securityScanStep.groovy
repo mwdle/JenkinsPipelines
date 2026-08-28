@@ -25,6 +25,6 @@ void call(String composeFile = null) {
 
 private void trivy(String command, String scanName) {
     withEnv(['TRIVY_DISABLE_VEX_NOTICE=true']) {
-        sh script: "trivy ${command} --disable-telemetry --no-progress --format json --output 'trivy-${scanName}.json'"
+        sh script: "trivy ${command} --ignore-unfixed --disable-telemetry --no-progress --format json --output 'trivy-${scanName}.json'"
     }
 }

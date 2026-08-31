@@ -4,18 +4,11 @@
  * This pipeline step runs Trivy security scans.
  * Full usage instructions, configuration options, and examples are in the README.
  */
-void call(String composeFile = null) {
+void call(String imageReference = null) {
     trivy('fs --scanners vuln --severity HIGH,CRITICAL .', 'fs-vuln')
     trivy('fs --scanners misconfig,secret .', 'fs-misconfig-secret')
-    if (composeFile && fileExists(composeFile)) {
-        def composeData = readYaml file: composeFile
-        if (composeData?.services) {
-            composeData.services.each { name, service ->
-                if (service.image) {
-                    trivy("image --severity HIGH,CRITICAL ${service.image}", "image-${name}")
-                }
-            }
-        }
+    if (imageReference) {
+        trivy("image --severity HIGH,CRITICAL '${imageReference}'", "image")
     }
     recordIssues(
         tool: trivy(pattern: 'trivy-*.json'),

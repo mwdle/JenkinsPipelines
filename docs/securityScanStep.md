@@ -1,6 +1,6 @@
 # Security Scan Step for Jenkins
 
-The **Security Scan** step is a Jenkins shared library function that integrates [Trivy](https://trivy.dev/) scanning into pipelines. It provides automated security checks for repository files, Infrastructure as Code (IaC) configurations, and Docker Compose container images, publishing rich reports directly to the Jenkins UI.
+The **Security Scan** step is a Jenkins shared library function that integrates [Trivy](https://trivy.dev/) scanning into pipelines. It provides automated security checks for repository files, Infrastructure as Code (IaC) configurations, and container images, publishing rich reports directly to the Jenkins UI.
 
 ---
 
@@ -9,9 +9,9 @@ The **Security Scan** step is a Jenkins shared library function that integrates 
 This step acts as a lightweight security monitor that provides insights without interrupting deployments:
 
 1. **Filesystem & Secret Scanning:** Scans repository dependencies, Dockerfiles, and code for known vulnerabilities, misconfigurations, and leaked secrets using `trivy fs`.
-2. **Compose Integration:** Optionally parses a specified Docker Compose file to scan all referenced container images (`trivy image`).
+2. **Compose Integration:** Optionally scans a given container image reference using `trivy image`.
 3. **Native UI Integration:** Outputs all findings in Trivy's native JSON format and uses the Jenkins Warnings Next Generation plugin to generate dedicated security dashboards, trend graphs, and line-level code highlighting.
-4. **Non-Blocking Warnings:** Scans run without interrupting pipeline execution. If issues are found, the build is gracefully marked as **`UNSTABLE`** (yellow) in Jenkins via a quality gate, giving you clean visual tracking on your dashboard without breaking your automated deployments.
+4. **Non-Blocking Warnings:** Scans run without interrupting pipeline execution. If issues are found, the build is gracefully marked as **`UNSTABLE`** in Jenkins via a quality gate.
 
 ---
 
@@ -32,15 +32,15 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 
 - `sh` (Bourne shell)
 - `trivy`
-- `docker` (optional - only required if providing a Docker Compose file to scan step)
+- `docker` (optional - only required if providing a container image reference to scan)
 
 ---
 
 ## Parameters Cheatsheet
 
-| Parameter     | Type   | Description                                                               |
-| ------------- | ------ | ------------------------------------------------------------------------- |
-| `composeFile` | String | Path to a Docker Compose file to scan (optional, e.g., `"compose.yaml"`). |
+| Parameter        | Type   | Description                                                               |
+| ---------------- | ------ | ------------------------------------------------------------------------- |
+| `imageReference` | String | The container image reference to scan (optional, e.g., `"org/image:tag"`) |
 
 ---
 
@@ -49,7 +49,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 ```groovy
 @Library("JenkinsPipelines") _
 // Basic usage (scans repository files only)
-securityScan()
-// Advanced usage (scans repository files, Docker Compose referenced images)
-securityScan("docker-compose.yml")
+securityScanStep()
+// Advanced usage (scans repository files, container images)
+securityScanStep("my/customImage:latest")
 ```

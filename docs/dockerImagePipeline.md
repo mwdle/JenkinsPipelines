@@ -30,6 +30,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 - `sh` (Bourne shell)
 - `git`
 - `docker`
+- `trivy` (required if `disableSecurityScan` is false. It is enabled by default)
 
 ---
 
@@ -50,6 +51,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 | ---------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `agentLabel`                 | String  | Jenkins agent label (default: `"docker"`).                                                                                            |
 | `disableIndexTriggers`       | Boolean | Disable automatic branch indexing triggers via `overrideIndexTriggers(false)`. Does **not** remove `cronSchedule` (default: `false`). |
+| `disableSecurityScan`        | Boolean | Disable automatic trivy security scan step from this shared library (default: `false`).                                               |
 | `cronSchedule`               | String  | Cron expression for periodic builds.                                                                                                  |
 | `alertEmail`                 | String  | Email address for failure notifications (default: `null`).                                                                            |
 | `postCheckoutSteps`          | Closure | Hook to execute after checkout (default: `null`).                                                                                     |
@@ -104,13 +106,11 @@ Example:
 dockerImagePipeline(
     agentLabel: 'docker',
     disableIndexTriggers: false,
+    disableSecurityScan: false,
     cronSchedule: '0 0 * * *',
     alertEmail: 'admin@example.com',
     postCheckoutSteps: {
         echo "Running custom post-checkout steps..."
-        stage('Security Scan') {
-            securityScanStep()
-        }
     },
     defaultDockerCredentialsId: 'container-registry-creds',
     defaultRegistryHost: 'git.example.com',

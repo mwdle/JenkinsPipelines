@@ -10,6 +10,7 @@ void call(Map configParams = [:]) {
         agentLabel:              'docker',
         disableConcurrentBuilds: true,
         disableIndexTriggers:    false,
+        disableSecurityScan:     false,
         cronSchedule:            null,
         additionalTriggers:      [],
         alertEmail:              null,
@@ -137,6 +138,7 @@ private void validateConfig(Map config) {
     List booleanParams = [
         'disableConcurrentBuilds',
         'disableIndexTriggers',
+        'disableSecurityScan',
         'defaultComposeDown',
         'defaultComposeRestart',
         'defaultForceRecreate',
@@ -174,6 +176,11 @@ private void deploymentFlow(Map config) {
     // If a post-checkout closure was provided, execute it
     if (config.postCheckoutSteps) {
         config.postCheckoutSteps()
+    }
+    if (!config.disableSecurityScan) {
+        stage('Security Scan') {
+            securityScanStep()
+        }
     }
     if (config.envFileCredentialIds) {
         echo 'Secrets integration enabled.'

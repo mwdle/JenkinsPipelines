@@ -10,6 +10,7 @@ def call(Map parameters = [:]) {
     def defaults = [
         agentLabel:                 'docker',
         disableIndexTriggers:       false,
+        disableSecurityScan:        false,
         cronSchedule:               null,
         alertEmail:                 null,
         postCheckoutSteps:          null,
@@ -94,6 +95,7 @@ private void validateConfig(Map config) {
     }
     def booleanParams = [
         'disableIndexTriggers',
+        'disableSecurityScan',
         'defaultNoCache'
     ]
     booleanParams.each { param ->
@@ -144,6 +146,12 @@ private void imageBuildFlow(Map config) {
 
         echo "=== Building Docker Image: ${fullImageName}:${tag} ==="
         sh "docker build ${noCacheFlag} -f ${dockerfile} -t ${fullImageName}:${tag} -t ${fullImageName}:${gitSha} ."
+    }
+
+    if (!config.disableSecurityScan) {  
+        stage('Security Scan') {
+            securityScanStep("${fullImageName}:${tag}")
+        }
     }
 
     stage('Push Docker Image') {

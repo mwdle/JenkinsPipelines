@@ -213,8 +213,8 @@ dockerComposePipeline(
         // Must use scripted pipeline syntax.
         [$class: 'GenericTrigger',
             genericVariables: [
-                [key: 'GIT_REPO', value: '$.repository.full_name', defaultValue: ''],
-                [key: 'GIT_SENDER', value: '$.sender.login', defaultValue: '']
+                [key: 'GIT_REPO', value: '$.repository.full_name'],
+                [key: 'GIT_SENDER', value: '$.sender.login']
             ],
             causeString: 'Triggered by webhook',
             token: '', tokenCredentialId: 'My Webhook Token',

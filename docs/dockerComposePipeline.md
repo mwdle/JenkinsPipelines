@@ -208,7 +208,9 @@ dockerComposePipeline(
     disableSecurityScan: false,
     cronSchedule: '0 0 * * *',
     additionalTriggers: [
-        // Providing the GenericTrigger requires the Generic Webhook Trigger plugin. Must use scripted pipeline syntax.
+        // Built in triggers can be provided here.
+        // The GenericTrigger in particular requires the Generic Webhook Trigger plugin.
+        // Must use scripted pipeline syntax.
         [$class: 'GenericTrigger',
             genericVariables: [
                 [key: 'GIT_REPO', value: '$.repository.full_name', defaultValue: ''],

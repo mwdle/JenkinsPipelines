@@ -87,9 +87,9 @@ The Jenkins agent requires:
 | `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                         |
 | `deploymentsDirectory`       | String    | Base directory on the target host for synchronized repositories (default: `"~/deployments"`). |
 | `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                 |
-| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `"host.containers.internal"`).                      |
-| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `22`).                                              |
-| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: empty).                   |
+| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `"lb.internal"`).                                   |
+| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                           |
+| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: 'lab-ssh').               |
 
 ---
 

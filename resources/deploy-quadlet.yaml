@@ -1,0 +1,59 @@
+- name: Manage Podman Quadlet application
+  hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Remove Podman Quadlet application
+      when: (quadlet_rm | default(false) | bool)
+      block:
+        - name: Remove Quadlet
+          containers.podman.podman_quadlet:
+            state: absent
+            name: ["{{ repository_name }}"]
+
+        - name: Remove deployment directory
+          ansible.builtin.file:
+            path: "{{ deployment_directory }}"
+            state: absent
+
+    - name: Deploy Podman Quadlet application
+      when: not (quadlet_rm | default(false) | bool)
+      block:
+        - name: Provision Podman Secrets
+          containers.podman.podman_secret:
+            name: "{{ item.name }}"
+            skip_existing: true
+            data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
+          loop: "{{ podman_secret_mappings | default([]) }}"
+          no_log: true
+
+        - name: Synchronize repository to host
+          ansible.posix.synchronize:
+            src: "{{ source_directory }}/"
+            dest: "{{ deployment_directory }}/"
+            delete: true
+            rsync_opts:
+              - "--mkpath"
+              - "--exclude=.git"
+
+        - name: Install Quadlet
+          containers.podman.podman_quadlet:
+            src: "{{ deployment_directory }}"
+          register: quadlet_install
+
+        - name: Discover deployed Quadlet service names
+          containers.podman.podman_quadlet_info:
+            kinds:
+              - container
+              - pod
+              - kube
+          register: quadlet_info
+
+        - name: Deploy Quadlet services
+          ansible.builtin.systemd:
+            name: "{{ item.UnitName }}"
+            state: "{{ 'restarted' if quadlet_install.changed else 'started' }}"
+            enabled: true
+            scope: user
+          loop: "{{ quadlet_info.quadlets | default([]) }}"
+          when: item.App == repository_name

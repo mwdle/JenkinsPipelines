@@ -75,21 +75,21 @@ The Jenkins agent requires:
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                    | Type      | Description                                                                                   |
-| ---------------------------- | --------- | --------------------------------------------------------------------------------------------- |
-| `agentLabel`                 | String    | Jenkins agent label (default: `"podman"`).                                                    |
-| `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                       |
-| `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                                |
-| `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                    |
-| `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                        |
-| `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                                 |
-| `alertEmail`                 | String    | Email address for failure notifications (default: `null`).                                    |
-| `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                         |
-| `deploymentsDirectory`       | String    | Base directory on the target host for synchronized repositories (default: `"~/deployments"`). |
-| `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                 |
-| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `"lb.internal"`).                                   |
-| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                           |
-| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: 'lab-ssh').               |
+| Parameter                    | Type      | Description                                                                                 |
+| ---------------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `agentLabel`                 | String    | Jenkins agent label (default: `"podman"`).                                                  |
+| `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                     |
+| `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                              |
+| `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                  |
+| `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                      |
+| `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                               |
+| `alertEmail`                 | String    | Email address for failure notifications (default: `null`).                                  |
+| `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                       |
+| `deploymentsDirectory`       | String    | Base directory on the target host for synchronized repositories (default: `~/deployments`). |
+| `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                               |
+| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                      |
+| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                         |
+| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).             |
 
 ---
 

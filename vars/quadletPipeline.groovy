@@ -17,7 +17,7 @@ void call(Map configParams = [:]) {
         deploymentsDirectory:       '~/deployments',
         podmanSecretMappings:       [],
         // Parameter Defaults
-        defaultTargetHost:          'lb.internal',
+        defaultTargetHost:          'host.containers.internal',
         defaultTargetPort:          52222,
         defaultTargetSshCredential: 'lab-ssh',
     ]

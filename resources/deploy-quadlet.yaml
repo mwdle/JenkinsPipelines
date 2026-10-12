@@ -13,7 +13,7 @@
 
         - name: Remove deployment directory
           ansible.builtin.file:
-            path: "{{ deployment_directory }}"
+            path: "{{ deployment_directory | expanduser }}"
             state: absent
 
     - name: Deploy Podman Quadlet application
@@ -30,7 +30,7 @@
         - name: Synchronize repository to host
           ansible.posix.synchronize:
             src: "{{ source_directory }}/"
-            dest: "{{ deployment_directory }}/"
+            dest: "{{ deployment_directory | expanduser }}/"
             delete: true
             rsync_opts:
               - "--mkpath"
@@ -38,7 +38,7 @@
 
         - name: Install Quadlet
           containers.podman.podman_quadlet:
-            src: "{{ deployment_directory }}"
+            src: "{{ deployment_directory | expanduser }}"
           register: quadlet_install
 
         - name: Discover deployed Quadlet service names

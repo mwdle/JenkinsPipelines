@@ -99,11 +99,13 @@ void call(Map configParams = [:]) {
                 writeFile(file: extraVarsPath, text: ansibleExtraVarsJson)
 
                 withEnv([
-                    "ANSIBLE_INVENTORY=${params.TARGET_HOST}:${params.TARGET_PORT},",
-                    'ANSIBLE_HOST_KEY_CHECKING=False'
+                    'ANSIBLE_HOST_KEY_CHECKING=False',
+                    "EXTRA_VARS_PATH=${extraVarsPath}",
+                    "PLAYBOOK_PATH=${playbookPath}",
+                    "TARGET=${params.TARGET_HOST}:${params.TARGET_PORT},"
                 ]) {
                     withCredentials(credentialBindings) {
-                        sh "ansible-playbook '${playbookPath}' -e '@${extraVarsPath}'"
+                        sh 'ansible-playbook "${PLAYBOOK_PATH}" -i "${TARGET}" -e "@${EXTRA_VARS_PATH}"'
                     }
                 }
             }

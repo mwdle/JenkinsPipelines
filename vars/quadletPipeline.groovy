@@ -14,7 +14,7 @@ void call(Map configParams = [:]) {
         additionalTriggers:         [],
         alertEmail:                 null,
         postCheckoutSteps:          null,
-        deploymentsDirectory:       '~/deployments',
+        deploymentsDirectory:       'deployments',
         podmanSecretMappings:       [],
         // Parameter Defaults
         defaultTargetHost:          'host.containers.internal',

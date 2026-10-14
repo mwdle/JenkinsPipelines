@@ -63,7 +63,7 @@ void call(Map configParams = [:]) {
                     switch (mapping.type) {
                         case 'string':
                             credentialBindings.add(string(credentialsId: mapping.credentialsId, variable: secretVariable))
-                            secretMetadata.add([name: mapping.podmanSecretStringName, source: 'env', variable: secretVariable])
+                            secretMetadata.add([name: mapping.podmanSecretStringName ?: mapping.credentialsId, source: 'env', variable: secretVariable])
                             break
                         case 'usernamePassword':
                             String usernameVariable = "${secretVariable}_USER"
@@ -74,7 +74,7 @@ void call(Map configParams = [:]) {
                             break
                         case 'file':
                             credentialBindings.add(file(credentialsId: mapping.credentialsId, variable: secretVariable))
-                            secretMetadata.add([name: mapping.podmanSecretFileName, source: 'file', variable: secretVariable])
+                            secretMetadata.add([name: mapping.podmanSecretFileName ?: mapping.credentialsId, source: 'file', variable: secretVariable])
                             break
                         default:
                             error("Unsupported Podman secret mapping. ID: '${mapping.credentialsId}' type: '${mapping.type}'")

@@ -99,7 +99,18 @@ The pipeline supports Jenkins string, username/password, and file credentials.
 
 Podman secrets are treated as immutable. If a secret with the requested name already exists on the target, the pipeline leaves it unchanged. To rotate a secret, create it under a new Podman secret name and update the consuming Quadlet to reference that name.
 
+String and file credentials use their Jenkins credential ID as the Podman secret name by default. Set `podmanSecretStringName` or `podmanSecretFileName` only when the Podman secret should use a different name. Username/password credentials always require explicit names because they create two separate Podman secrets.
+
 ### String Credential
+
+```groovy
+[
+    type: 'string',
+    credentialsId: 'caddy_cloudflare_api_token'
+]
+```
+
+To use a different Podman secret name:
 
 ```groovy
 [
@@ -127,8 +138,7 @@ A Jenkins username/password credential creates two Podman secrets:
 ```groovy
 [
     type: 'file',
-    credentialsId: 'application-config',
-    podmanSecretFileName: 'application_config'
+    credentialsId: 'application_config'
 ]
 ```
 
@@ -186,8 +196,7 @@ quadletPipeline(
     podmanSecretMappings: [
         [
             type: 'string',
-            credentialsId: 'cloudflare-api-token',
-            podmanSecretStringName: 'caddy_cloudflare_api_token'
+            credentialsId: 'caddy_cloudflare_api_token'
         ],
         [
             type: 'usernamePassword',
@@ -197,8 +206,7 @@ quadletPipeline(
         ],
         [
             type: 'file',
-            credentialsId: 'application-config',
-            podmanSecretFileName: 'application_config'
+            credentialsId: 'application_config'
         ]
     ]
 )

@@ -24,12 +24,12 @@
       when: not (quadlet_rm | default(false) | bool)
       block:
         - name: Provision Podman Secrets
+          loop: "{{ podman_secret_mappings | default([]) }}"
+          no_log: true
           containers.podman.podman_secret:
             name: "{{ item.name }}"
             skip_existing: true
             data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
-          loop: "{{ podman_secret_mappings | default([]) }}"
-          no_log: true
 
         - name: Synchronize repository to host
           ansible.posix.synchronize:
@@ -54,10 +54,9 @@
           register: quadlet_info
 
         - name: Deploy Quadlet services
+          loop: "{{ quadlet_info.quadlets | selectattr('App', 'equalto', repository_name) | list }}"
           ansible.builtin.systemd:
             name: "{{ item.UnitName }}"
             state: "{{ 'restarted' if quadlet_install.changed else 'started' }}"
             enabled: true
             scope: user
-          loop: "{{ quadlet_info.quadlets | default([]) }}"
-          when: item.App == repository_name

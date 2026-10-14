@@ -3,6 +3,7 @@
   gather_facts: true
 
   vars:
+    ansible_python_interpreter: auto_silent
     deployment_path: "{{ ansible_facts['user_dir'] }}/{{ deployment_directory }}"
 
   tasks:

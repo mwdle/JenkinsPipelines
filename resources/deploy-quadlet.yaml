@@ -3,7 +3,7 @@
   gather_facts: true
 
   vars:
-    deployment_path: "{{ ansible_user_dir }}/{{ deployment_directory }}"
+    deployment_path: "{{ ansible_facts['user_dir'] }}/{{ deployment_directory }}"
 
   tasks:
     - name: Remove Podman Quadlet application

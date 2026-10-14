@@ -38,6 +38,7 @@
             rsync_opts:
               - "--mkpath"
               - "--exclude=.git"
+              - "--exclude=Jenkinsfile"
 
         - name: Install Quadlet
           containers.podman.podman_quadlet:

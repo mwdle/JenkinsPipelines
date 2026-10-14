@@ -25,7 +25,6 @@
       block:
         - name: Provision Podman Secrets
           loop: "{{ podman_secret_mappings | default([]) }}"
-          no_log: true
           containers.podman.podman_secret:
             name: "{{ item.name }}"
             skip_existing: true

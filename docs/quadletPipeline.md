@@ -83,7 +83,7 @@ The Jenkins agent requires:
 | `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                    |
 | `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                        |
 | `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                                 |
-| `alertEmail`                 | String    | Email address for failure notifications (default: `null`).                                    |
+| `alertEmail`                 | String    | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).     |
 | `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                         |
 | `deploymentsDirectory`       | String    | Directory under the remote SSH user's home for staging repositories (default: `deployments`). |
 | `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                 |
@@ -95,7 +95,7 @@ The Jenkins agent requires:
 
 ## Podman Secrets
 
-The pipeline supports Jenkins string, username/password, and file credentials. Jenkins exposes the selected credentials only for the deployment step, and the Ansible secret task suppresses its output.
+The pipeline supports Jenkins string, username/password, and file credentials.
 
 Podman secrets are treated as immutable. If a secret with the requested name already exists on the target, the pipeline leaves it unchanged. To rotate a secret, create it under a new Podman secret name and update the consuming Quadlet to reference that name.
 
@@ -211,4 +211,5 @@ quadletPipeline(
 - The first build registers the Jenkins parameters and exits with a `NOT_BUILT` result. Run the job again to deploy.
 - Changes to job properties and parameter defaults take effect after a build updates the job configuration.
 - Concurrent builds are disabled by default to prevent two deployments of the same application from overlapping.
+- Failure notifications use the Jenkins `ALERT_EMAIL` environment variable by default. Set `alertEmail` in the Jenkinsfile to override it; notifications are disabled when neither provides an address.
 - Host key checking is disabled because agents are ephemeral. Use this pipeline only with trusted deployment targets and networks.

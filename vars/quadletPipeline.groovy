@@ -12,7 +12,7 @@ void call(Map configParams = [:]) {
         disableSecurityScan:        false,
         cronSchedule:               null,
         additionalTriggers:         [],
-        alertEmail:                 null,
+        alertEmail:                 env.ALERT_EMAIL?.trim() ?: null,
         postCheckoutSteps:          null,
         deploymentsDirectory:       'deployments',
         podmanSecretMappings:       [],

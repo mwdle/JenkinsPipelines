@@ -1,6 +1,6 @@
 # Podman Quadlet Pipeline for Jenkins
 
-The **Podman Quadlet Pipeline** is a Jenkins shared library pipeline for deploying rootless Podman Quadlet applications over SSH. It synchronizes a repository to the target host, provisions Podman secrets from Jenkins credentials, installs the repository as a Quadlet application, and manages its generated systemd services.
+The **Podman Quadlet Pipeline** is a Jenkins shared library pipeline for deploying rootless Podman Quadlet applications over SSH. It stages a repository on the target host, provisions Podman secrets from Jenkins credentials, installs the repository as a Quadlet application, and manages its generated systemd services.
 
 ---
 
@@ -9,12 +9,12 @@ The **Podman Quadlet Pipeline** is a Jenkins shared library pipeline for deployi
 The pipeline provides a consistent deployment flow for repositories containing Quadlet files and their supporting assets:
 
 1. **Checkout and Scan:** Checks out the repository and runs the shared Trivy security scan unless disabled.
-2. **Secret Provisioning:** Converts configured Jenkins credentials into rootless Podman secrets on the target host.
-3. **Repository Synchronization:** Synchronizes the repository to a stable deployment directory while excluding `.git` metadata.
-4. **Quadlet Installation:** Installs the repository directory as a Podman Quadlet application and reloads user systemd.
-5. **Service Management:** Restarts the application's container, pod, and kube services when the installed content changes. Unchanged services are simply ensured to be running and enabled.
+2. **Secret Provisioning:** Converts configured Jenkins credentials into Podman secrets on the target host.
+3. **Repository Staging:** Synchronizes the repository to a stable staging directory while excluding `.git` metadata and the Jenkinsfile.
+4. **Quadlet Installation:** Installs the staged repository as a Podman Quadlet application.
+5. **Service Management:** Restarts the application's container, pod, and kube services when the installed content changes. Unchanged services are ensured to be running.
 
-The repository name becomes both the Quadlet application name and the final component of its deployment directory. For example, `caddy-config` is deployed to `deployments/caddy-config` under the remote SSH user's home directory by default and installed as the `caddy-config` Quadlet application.
+The repository name becomes both the Quadlet application name and the final component of its staging directory. For example, a repository named `caddy-config` is staged on the target at `~/staging/caddy-config` by default and installed as the `caddy-config` Quadlet application.
 
 > [!NOTE]
 > A changed application restarts all container, pod, and kube services belonging to that application. Use systemd dependencies in the Quadlet files to define startup ordering within a multi-service application.
@@ -54,7 +54,8 @@ The Jenkins agent requires:
 - `ansible-core`
 - `ansible.posix` and `containers.podman` Ansible collections
 - `trivy` when security scanning is enabled
-- The target Linux host requires:
+
+The target Linux host requires:
 
 - SSH access for the deployment user
 - Podman 6 or later
@@ -66,30 +67,30 @@ The Jenkins agent requires:
 
 ## Pipeline Parameters Cheatsheet
 
-| Parameter               | Type       | Description                                                                  |
-| ----------------------- | ---------- | ---------------------------------------------------------------------------- |
-| `TARGET_HOST`           | String     | Resolvable hostname or IP address of the deployment target.                  |
-| `TARGET_PORT`           | String     | SSH port on the deployment target.                                           |
-| `TARGET_SSH_CREDENTIAL` | Credential | Jenkins SSH Username with private key credential used for target access.     |
-| `QUADLET_RM`            | Boolean    | Stop and remove the Quadlet application and deployment directory, then exit. |
+| Parameter               | Type       | Description                                                               |
+| ----------------------- | ---------- | ------------------------------------------------------------------------- |
+| `TARGET_HOST`           | String     | Resolvable hostname or IP address of the deployment target.               |
+| `TARGET_PORT`           | String     | SSH port on the deployment target.                                        |
+| `TARGET_SSH_CREDENTIAL` | Credential | Jenkins SSH Username with private key credential used for target access.  |
+| `QUADLET_RM`            | Boolean    | Stop and remove the Quadlet application and staging directory, then exit. |
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                    | Type      | Description                                                                                   |
-| ---------------------------- | --------- | --------------------------------------------------------------------------------------------- |
-| `agentLabel`                 | String    | Jenkins agent label (default: `"podman"`).                                                    |
-| `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                       |
-| `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                                |
-| `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                    |
-| `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                        |
-| `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                                 |
-| `alertEmail`                 | String    | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).     |
-| `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                         |
-| `deploymentsDirectory`       | String    | Directory under the remote SSH user's home for staging repositories (default: `deployments`). |
-| `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                 |
-| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                        |
-| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                           |
-| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).               |
+| Parameter                    | Type      | Description                                                                                 |
+| ---------------------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `agentLabel`                 | String    | Jenkins agent label (default: `"podman"`).                                                  |
+| `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                     |
+| `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                              |
+| `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                  |
+| `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                      |
+| `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                               |
+| `alertEmail`                 | String    | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).   |
+| `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                       |
+| `stagingDirectory`           | String    | Directory under the remote SSH user's home used to stage repositories (default: `staging`). |
+| `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                               |
+| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                      |
+| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                         |
+| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).             |
 
 ---
 
@@ -189,7 +190,7 @@ quadletPipeline(
     postCheckoutSteps: {
         echo "Running custom post-checkout steps..."
     },
-    deploymentsDirectory: 'deployments',
+    stagingDirectory: 'staging',
     defaultTargetHost: 'host.containers.internal',
     defaultTargetPort: 22,
     defaultTargetSshCredential: 'homelab-ssh',

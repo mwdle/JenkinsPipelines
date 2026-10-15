@@ -14,7 +14,7 @@ void call(Map configParams = [:]) {
         additionalTriggers:         [],
         alertEmail:                 env.ALERT_EMAIL?.trim() ?: null,
         postCheckoutSteps:          null,
-        deploymentsDirectory:       'deployments',
+        stagingDirectory:           'staging',
         podmanSecretMappings:       [],
         // Parameter Defaults
         defaultTargetHost:          'host.containers.internal',
@@ -86,11 +86,11 @@ void call(Map configParams = [:]) {
                 if (!repositoryName?.trim()) {
                     error("Could not resolve repository name from JOB_NAME (${env.JOB_NAME})")
                 }
-                String deploymentDirectory = "${config.deploymentsDirectory}/${repositoryName}"
+                String stagingDirectory = "${config.stagingDirectory}/${repositoryName}"
 
                 String ansibleExtraVarsJson = groovy.json.JsonOutput.toJson([
                     repository_name:        repositoryName,
-                    deployment_directory:   deploymentDirectory,
+                    staging_directory:      stagingDirectory,
                     source_directory:       pwd(),
                     quadlet_rm:             params.QUADLET_RM,
                     podman_secret_mappings: secretMetadata
@@ -176,8 +176,8 @@ private void validateConfig(Map config) {
             error("Configuration Error: '${param}' must be a Boolean (true/false)")
         }
     }
-    if (config.deploymentsDirectory && !(config.deploymentsDirectory instanceof CharSequence)) {
-        error("Config Error: 'deploymentsDirectory' must be a String path")
+    if (config.stagingDirectory && !(config.stagingDirectory instanceof CharSequence)) {
+        error("Config Error: 'stagingDirectory' must be a String path")
     }
     if (config.podmanSecretMappings && !(config.podmanSecretMappings instanceof List)) {
         error("Config Error: 'podmanSecretMappings' must be a List")

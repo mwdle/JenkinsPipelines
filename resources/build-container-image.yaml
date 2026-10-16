@@ -4,7 +4,7 @@
 
   vars:
     ansible_python_interpreter: auto_silent
-    staging_path: "{{ ansible_facts['user_dir'] }}/{{ staging_directory }}"
+    resolved_staging_directory: "{{ ansible_facts['user_dir'] }}/{{ staging_directory }}"
 
   tasks:
     - name: Build and push container image
@@ -12,7 +12,7 @@
         - name: Stage build context
           ansible.posix.synchronize:
             src: "{{ source_directory }}/"
-            dest: "{{ staging_path }}/"
+            dest: "{{ resolved_staging_directory }}/"
             delete: true
             checksum: true
             times: false
@@ -25,10 +25,10 @@
             name: "{{ image_name }}"
             tag: "{{ image_tag }}"
             state: build
-            path: "{{ staging_path }}"
+            path: "{{ resolved_staging_directory }}"
             force: true
             build:
-              file: "{{ staging_path }}/{{ containerfile }}"
+              file: "{{ resolved_staging_directory }}/{{ containerfile }}"
               cache: "{{ not (no_cache | bool) }}"
 
         - name: Push container image
@@ -42,5 +42,5 @@
       always:
         - name: Remove staged build context
           ansible.builtin.file:
-            path: "{{ staging_path }}"
+            path: "{{ resolved_staging_directory }}"
             state: absent

@@ -1,0 +1,64 @@
+- name: Manage Podman Quadlet application
+  hosts: all
+  gather_facts: true
+
+  vars:
+    ansible_python_interpreter: auto_silent
+    resolved_staging_directory: "{{ ansible_facts['user_dir'] }}/{{ staging_directory }}"
+
+  tasks:
+    - name: Apply requested Quadlet application state
+      block:
+        - name: Remove Quadlet application
+          when: quadlet_rm | default(false) | bool
+          containers.podman.podman_quadlet:
+            state: absent
+            name:
+              - "{{ repository_name }}"
+
+        - name: Install Quadlet application
+          when: not (quadlet_rm | default(false) | bool)
+          block:
+            - name: Provision Podman secrets
+              loop: "{{ podman_secret_mappings | default([]) }}"
+              containers.podman.podman_secret:
+                name: "{{ item.name }}"
+                skip_existing: true
+                data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
+
+            - name: Stage Quadlet application
+              ansible.posix.synchronize:
+                src: "{{ source_directory }}/"
+                dest: "{{ resolved_staging_directory }}/"
+                delete: true
+                checksum: true
+                times: false
+                rsync_opts:
+                  - "--mkpath"
+                  - "--exclude=.git"
+
+            - name: Install Quadlet application
+              containers.podman.podman_quadlet:
+                src: "{{ resolved_staging_directory }}"
+              register: quadlet_install
+
+            - name: Discover installed Quadlet services
+              containers.podman.podman_quadlet_info:
+                kinds:
+                  - container
+                  - pod
+                  - kube
+              register: quadlet_info
+
+            - name: Start or restart Quadlet services
+              loop: "{{ quadlet_info.quadlets | selectattr('App', 'equalto', repository_name) | list }}"
+              ansible.builtin.systemd:
+                name: "{{ item.UnitName }}"
+                state: "{{ 'restarted' if quadlet_install.changed else 'started' }}"
+                scope: user
+
+      always:
+        - name: Remove staging directory
+          ansible.builtin.file:
+            path: "{{ resolved_staging_directory | dirname }}"
+            state: absent

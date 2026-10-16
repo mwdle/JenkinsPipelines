@@ -14,7 +14,7 @@ void call(Map configParams = [:]) {
         additionalTriggers:             [],
         alertEmail:                     env.ALERT_EMAIL?.trim() ?: null,
         postCheckoutSteps:              null,
-        stagingDirectory:               'staging',
+        stagingDirectory:               '.staging',
         // Parameter defaults
         defaultRegistryCredential:      'Forgejo PAT',
         defaultRegistryHost:            'git.mwdle.com',
@@ -29,6 +29,13 @@ void call(Map configParams = [:]) {
     Map config = defaults + configParams
     validateConfig(config)
     applyJobProperties(config)
+
+    // The first build configures parameters and branch indexing behavior without publishing.
+    if (env.BUILD_NUMBER == '1') {
+        echo 'Jenkins is initializing this job. Please rebuild with parameters to proceed.'
+        currentBuild.result = 'NOT_BUILT'
+        return
+    }
 
     validateParameters()
 

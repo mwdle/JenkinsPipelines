@@ -15,7 +15,7 @@ The pipeline provides a consistent image build flow for repositories containing 
 5. **Staging Cleanup:** Removes the remote build context whether the build succeeds or fails.
 6. **Security Scan:** Scans the repository and published image with Trivy unless security scanning is disabled.
 
-Each build is staged below the remote user's home at `~/staging/<BUILD_TAG>` by default. Jenkins provides a distinct `BUILD_TAG` containing the job identity and build number, keeping staging directories isolated across jobs, branches, and concurrent builds.
+Each build is staged below the remote user's home at `~/.staging/<BUILD_TAG>` by default. Jenkins provides a distinct `BUILD_TAG` containing the job identity and build number, keeping staging directories isolated across jobs, branches, and concurrent builds.
 
 The registry password and SSH private key remain Jenkins credentials. They are not included in the staged build context or Ansible extra-vars file.
 
@@ -94,7 +94,7 @@ The remote Linux build host requires:
 | `additionalTriggers`         | List    | Additional scripted pipeline trigger objects (default: `[]`).                                                          |
 | `alertEmail`                 | String  | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).                              |
 | `postCheckoutSteps`          | Closure | Custom steps to run after checkout (default: `null`).                                                                  |
-| `stagingDirectory`           | String  | Directory under the remote SSH user's home used for temporary build contexts (default: `staging`).                     |
+| `stagingDirectory`           | String  | Directory under the remote SSH user's home used for temporary build contexts (default: `.staging`).                    |
 | `defaultRegistryCredential`  | String  | Default Jenkins credential ID for `REGISTRY_CREDENTIAL` (default: `Forgejo PAT`).                                      |
 | `defaultRegistryHost`        | String  | Default value for `REGISTRY_HOST` (default: `git.mwdle.com`).                                                          |
 | `defaultImageName`           | String  | Default value for `IMAGE_NAME` (default: empty).                                                                       |
@@ -163,7 +163,7 @@ containerImagePipeline(
     postCheckoutSteps: {
         echo 'Running custom post-checkout steps...'
     },
-    stagingDirectory: 'staging',
+    stagingDirectory: '.staging',
     defaultRegistryCredential: 'container-registry-creds',
     defaultRegistryHost: 'registry.example.com',
     defaultImageName: 'my-org/my-image',
@@ -180,6 +180,7 @@ containerImagePipeline(
 
 ## Jenkins Behavior Notes
 
+- The first build configures parameters and branch indexing behavior, then exits with a `NOT_BUILT` result without building or publishing an image. Run the job again to build it.
 - Changes to job properties and parameter defaults take effect after a build updates the job configuration.
 - Concurrent builds of the same job are disabled by default. Independent jobs and branches remain isolated by their Jenkins `BUILD_TAG` staging directory.
 - Failure notifications use the Jenkins `ALERT_EMAIL` environment variable by default. Set `alertEmail` in the Jenkinsfile to override it; notifications are disabled when neither provides an address.

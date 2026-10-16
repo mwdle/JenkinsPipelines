@@ -48,7 +48,7 @@ void call(Map configParams = [:]) {
             String imageReference = "${fullImageName}:${params.TAG}"
             stage('Build Image') {
                 String noCache = params.NO_CACHE ? '--no-cache ' : ''
-                sh "podman build ${noCache} --file '${params.CONTAINERFILE}' --tag '${imageReference}' ."
+                sh "podman-remote build ${noCache} --file '${params.CONTAINERFILE}' --tag '${imageReference}' ."
             }
 
             stage('Security Scan') {
@@ -64,11 +64,11 @@ void call(Map configParams = [:]) {
                     withCredentials([
                         usernamePassword(credentialsId: params.REGISTRY_CREDENTIAL, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')
                     ]) {
-                        sh 'printf "%s" "$REGISTRY_PASSWORD" | podman login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin'
+                        sh 'printf "%s" "$REGISTRY_PASSWORD" | podman-remote login "$REGISTRY_HOST" --username "$REGISTRY_USERNAME" --password-stdin'
                     }
-                    sh "podman push '${imageReference}'"
+                    sh "podman-remote push '${imageReference}'"
                 } finally {
-                    sh script: "podman logout '${params.REGISTRY_HOST.trim()}'", returnStatus: true
+                    sh script: "podman-remote logout '${params.REGISTRY_HOST.trim()}'", returnStatus: true
                 }
             }
         } catch (err) {

@@ -49,7 +49,7 @@ The Jenkins agent requires:
 
 - `sh`
 - `git`
-- `podman-remote`, available as `podman`
+- `podman-remote`
 - Access to the remote Podman socket through `CONTAINER_HOST` and `DOCKER_HOST`
 - `trivy` when security scanning is enabled
 

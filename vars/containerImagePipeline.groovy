@@ -50,37 +50,23 @@ void call(Map configParams = [:]) {
 
             String fullImageName = "${params.REGISTRY_HOST.trim()}/${params.IMAGE_NAME}"
             stage('Build and Push') {
-                String tmpDir = pwd(tmp: true)
-                String playbookPath = "${tmpDir}/build-container-image.yaml"
-                String playbook = libraryResource('build-container-image.yaml')
-                writeFile(file: playbookPath, text: playbook)
-
-                String ansibleExtraVarsJson = groovy.json.JsonOutput.toJson([
-                    source_directory:  pwd(),
-                    staging_directory: "${config.stagingDirectory}/${env.BUILD_TAG}",
-                    image_name:        fullImageName,
-                    image_tag:         params.TAG,
-                    containerfile:     params.CONTAINERFILE,
-                    no_cache:          params.NO_CACHE
-                ])
-                String extraVarsPath = "${tmpDir}/extra-vars.json"
-                writeFile(file: extraVarsPath, text: ansibleExtraVarsJson)
-
-                withEnv([
-                    'ANSIBLE_HOST_KEY_CHECKING=False',
-                    'ANSIBLE_CALLBACKS_ENABLED=ansible.posix.profile_tasks',
-                    'ANSIBLE_CALLBACK_RESULT_FORMAT=yaml',
-                    "EXTRA_VARS_PATH=${extraVarsPath}",
-                    "PLAYBOOK_PATH=${playbookPath}",
-                    "TARGET=${params.TARGET_HOST}:${params.TARGET_PORT},"
-                ]) {
-                    withCredentials([
-                        sshUserPrivateKey(credentialsId: params.TARGET_SSH_CREDENTIAL, keyFileVariable: 'ANSIBLE_PRIVATE_KEY_FILE', usernameVariable: 'ANSIBLE_REMOTE_USER'),
+                ansiblePlaybookStep(
+                    playbookResource: 'build-container-image.yaml',
+                    targetHost: params.TARGET_HOST,
+                    targetPort: params.TARGET_PORT,
+                    sshCredential: params.TARGET_SSH_CREDENTIAL,
+                    credentialBindings: [
                         usernamePassword(credentialsId: params.REGISTRY_CREDENTIAL, usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')
-                    ]) {
-                        sh 'ansible-playbook "${PLAYBOOK_PATH}" -i "${TARGET}" -e "@${EXTRA_VARS_PATH}"'
-                    }
-                }
+                    ],
+                    extraVars: [
+                        source_directory:  pwd(),
+                        staging_directory: "${config.stagingDirectory}/${env.BUILD_TAG}",
+                        image_name:        fullImageName,
+                        image_tag:         params.TAG,
+                        containerfile:     params.CONTAINERFILE,
+                        no_cache:          params.NO_CACHE
+                    ]
+                )
             }
 
             if (!config.disableSecurityScan) {

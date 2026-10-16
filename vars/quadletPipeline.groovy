@@ -52,14 +52,7 @@ void call(Map configParams = [:]) {
                 }
             }
             stage('Manage Quadlet') {
-                String tmpDir = pwd(tmp: true)
-                String playbookPath = "${tmpDir}/manage-quadlet.yaml"
-                String playbook = libraryResource('manage-quadlet.yaml')
-                writeFile(file: playbookPath, text: playbook)
-
-                List credentialBindings = [
-                    sshUserPrivateKey(credentialsId: params.TARGET_SSH_CREDENTIAL, keyFileVariable: 'ANSIBLE_PRIVATE_KEY_FILE', usernameVariable: 'ANSIBLE_REMOTE_USER')
-                ]
+                List credentialBindings = []
                 List secretMetadata = []
                 if (!params.QUADLET_RM) {
                     config.podmanSecretMappings.eachWithIndex { mapping, index ->
@@ -91,28 +84,20 @@ void call(Map configParams = [:]) {
                 if (!repositoryName?.trim()) {
                     error("Could not resolve repository name from JOB_NAME (${env.JOB_NAME})")
                 }
-                String ansibleExtraVarsJson = groovy.json.JsonOutput.toJson([
-                    repository_name:        repositoryName,
-                    staging_directory:      "${config.stagingDirectory}/${env.BUILD_TAG}/${repositoryName}",
-                    source_directory:       pwd(),
-                    quadlet_rm:             params.QUADLET_RM,
-                    podman_secret_mappings: secretMetadata
-                ])
-                String extraVarsPath = "${tmpDir}/extra-vars.json"
-                writeFile(file: extraVarsPath, text: ansibleExtraVarsJson)
-
-                withEnv([
-                    'ANSIBLE_HOST_KEY_CHECKING=False',
-                    'ANSIBLE_CALLBACKS_ENABLED=ansible.posix.profile_tasks',
-                    'ANSIBLE_CALLBACK_RESULT_FORMAT=yaml',
-                    "EXTRA_VARS_PATH=${extraVarsPath}",
-                    "PLAYBOOK_PATH=${playbookPath}",
-                    "TARGET=${params.TARGET_HOST}:${params.TARGET_PORT},"
-                ]) {
-                    withCredentials(credentialBindings) {
-                        sh 'ansible-playbook "${PLAYBOOK_PATH}" -i "${TARGET}" -e "@${EXTRA_VARS_PATH}"'
-                    }
-                }
+                ansiblePlaybookStep(
+                    playbookResource: 'manage-quadlet.yaml',
+                    targetHost: params.TARGET_HOST,
+                    targetPort: params.TARGET_PORT,
+                    sshCredential: params.TARGET_SSH_CREDENTIAL,
+                    credentialBindings: credentialBindings,
+                    extraVars: [
+                        repository_name:        repositoryName,
+                        staging_directory:      "${config.stagingDirectory}/${env.BUILD_TAG}/${repositoryName}",
+                        source_directory:       pwd(),
+                        quadlet_rm:             params.QUADLET_RM,
+                        podman_secret_mappings: secretMetadata
+                    ]
+                )
             }
         } catch (err) {
             boolean isAborted = err instanceof org.jenkinsci.plugins.workflow.steps.FlowInterruptedException

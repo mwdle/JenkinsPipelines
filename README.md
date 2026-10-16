@@ -14,7 +14,6 @@ Each function can be easily integrated into your Jenkins builds via the Jenkins 
 - [ansiblePlaybookStep](docs/ansiblePlaybookStep.md)
 - [containerImagePipeline](docs/containerImagePipeline.md)
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
-- [dockerImagePipeline](docs/dockerImagePipeline.md)
 - [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)
 
@@ -45,6 +44,5 @@ Detailed documentation for each pipeline and step is located in the `docs/` fold
 - [ansiblePlaybookStep](docs/ansiblePlaybookStep.md)
 - [containerImagePipeline](docs/containerImagePipeline.md)
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
-- [dockerImagePipeline](docs/dockerImagePipeline.md)
 - [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)

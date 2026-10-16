@@ -69,6 +69,7 @@ void call(Map configParams = [:]) {
                 withEnv([
                     'ANSIBLE_HOST_KEY_CHECKING=False',
                     'ANSIBLE_CALLBACKS_ENABLED=ansible.posix.profile_tasks',
+                    'ANSIBLE_CALLBACK_RESULT_FORMAT=yaml',
                     "EXTRA_VARS_PATH=${extraVarsPath}",
                     "PLAYBOOK_PATH=${playbookPath}",
                     "TARGET=${params.TARGET_HOST}:${params.TARGET_PORT},"

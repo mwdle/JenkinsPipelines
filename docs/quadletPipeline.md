@@ -17,7 +17,7 @@ The pipeline provides a consistent management flow for repositories containing Q
 
 The repository name becomes both the Quadlet application name and the final component of its staging path. For example, a repository named `caddy-config` is temporarily staged at `~/.staging/<BUILD_TAG>/caddy-config` by default and installed as the `caddy-config` Quadlet application.
 
-When `QUADLET_RM` is enabled, the pipeline removes the installed Quadlet application instead of scanning, provisioning secrets, staging, and installing the repository. Of the credentials managed by `quadletPipeline`, removal binds only the target SSH credential; application credentials referenced by `podmanSecretMappings` are not bound.
+When `QUADLET_RM` is enabled, the pipeline removes the installed Quadlet application instead of scanning, provisioning secrets, staging, and installing the repository. The Security Scan stage remains visible for consistent Jenkins stage history but reports that scanning was skipped. Of the credentials managed by `quadletPipeline`, removal binds only the target SSH credential; application credentials referenced by `podmanSecretMappings` are not bound.
 
 > [!NOTE]
 > A changed application restarts all container, pod, and kube services belonging to that application. Use systemd dependencies in the Quadlet files to define startup ordering within a multi-service application.

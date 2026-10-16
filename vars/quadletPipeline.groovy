@@ -42,9 +42,13 @@ void call(Map configParams = [:]) {
             if (config.postCheckoutSteps) {
                 config.postCheckoutSteps()
             }
-            if (!config.disableSecurityScan && !params.QUADLET_RM) {
+            if (!config.disableSecurityScan) {
                 stage('Security Scan') {
-                    securityScanStep()
+                    if (params.QUADLET_RM) {
+                        echo 'Skipping security scan for Quadlet removal.'
+                    } else {
+                        securityScanStep()
+                    }
                 }
             }
             stage('Manage Quadlet') {

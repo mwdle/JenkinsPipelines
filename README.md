@@ -11,8 +11,10 @@ Each function can be easily integrated into your Jenkins builds via the Jenkins 
 
 ### Included Pipelines
 
+- [containerImagePipeline](docs/containerImagePipeline.md)
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [dockerImagePipeline](docs/dockerImagePipeline.md)
+- [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)
 
 ## Usage
@@ -21,7 +23,7 @@ To use a tool from this library, add it to your `Jenkinsfile`, for example:
 
 ```groovy
 @Library("JenkinsPipelines") _
-dockerComposePipeline([...])
+quadletPipeline([...])
 ```
 
 Replace `[...]` with pipeline or step specific configuration parameters.
@@ -29,27 +31,16 @@ Replace `[...]` with pipeline or step specific configuration parameters.
 ## Requirements
 
 - Jenkins with Global Pipeline Libraries configured to include this repository.
-- Jenkins agents with necessary tools installed (e.g., `sh` and `docker` at minimum, others depending on the pipeline).
+- Jenkins agents with the tools required by the selected pipeline.
 - Appropriate credentials configured in Jenkins for pipelines that require them.
-- The [Warnings Plugin](https://plugins.jenkins.io/warnings-ng/) for Jenkins and `trivy` in agents (if using the security scan function which is enabled by default in both pipelines)
+- The [Warnings Plugin](https://plugins.jenkins.io/warnings-ng/) for Jenkins and `trivy` on agents when security scanning is enabled.
 
 ## Documentation
 
 Detailed documentation for each pipeline is located in the `docs/` folder:
 
+- [containerImagePipeline](docs/containerImagePipeline.md)
 - [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [dockerImagePipeline](docs/dockerImagePipeline.md)
+- [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)
-
-## Contributing
-
-Contributions are welcome!  
-If you encounter a bug or have a feature request, please open an issue on [GitHub Issues](https://github.com/mwdle/JenkinsPipelines/issues).
-
-To contribute code:
-
-1. Fork the repository.
-2. Implement your changes, with appropriate documentation.
-3. Submit a pull request describing the changes and why they are needed.
-
-Please ensure your contributions follow existing style conventions and include tests where applicable.

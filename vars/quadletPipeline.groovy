@@ -6,7 +6,7 @@
 void call(Map configParams = [:]) {
     // Centralized default configuration. User-provided config overrides defaults.
     Map defaults = [
-        agentLabel:                 'podman',
+        agentLabel:                 'ephemeral',
         disableConcurrentBuilds:    true,
         disableIndexTriggers:       false,
         disableSecurityScan:        false,

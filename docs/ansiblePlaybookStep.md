@@ -124,7 +124,7 @@ vars:
 ```groovy
 @Library('JenkinsPipelines') _
 
-node('podman') {
+node('ephemeral') {
     try {
         stage('Checkout') {
             checkout scm

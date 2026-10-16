@@ -83,7 +83,7 @@ The target Linux host requires:
 
 | Parameter                    | Type      | Description                                                                                                 |
 | ---------------------------- | --------- | ----------------------------------------------------------------------------------------------------------- |
-| `agentLabel`                 | String    | Jenkins agent label (default: `"podman"`).                                                                  |
+| `agentLabel`                 | String    | Jenkins agent label (default: `"ephemeral"`).                                                               |
 | `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                                     |
 | `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                                              |
 | `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                                  |
@@ -173,7 +173,7 @@ quadletPipeline(
 @Library('JenkinsPipelines') _
 
 quadletPipeline(
-    agentLabel: 'podman',
+    agentLabel: 'ephemeral',
     disableConcurrentBuilds: true,
     disableIndexTriggers: false,
     disableSecurityScan: false,

@@ -125,7 +125,7 @@ void call(Map configParams = [:]) {
             }
             throw err
         } finally {
-            deleteDir()
+            cleanWs(deleteDirs: true, disableDeferredWipeout: true)
         }
     }
 }

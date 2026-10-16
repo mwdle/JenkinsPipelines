@@ -36,6 +36,7 @@
                 rsync_opts:
                   - "--mkpath"
                   - "--exclude=.git"
+              changed_when: false
 
             - name: Install Quadlet application
               containers.podman.podman_quadlet:
@@ -62,3 +63,4 @@
           ansible.builtin.file:
             path: "{{ resolved_staging_directory | dirname }}"
             state: absent
+          changed_when: false

@@ -47,7 +47,7 @@ Use `.containerignore` to exclude files from the Podman build context.
 
 ## System Requirements
 
-The Jenkins controller requires the [Warnings Next Generation Plugin](https://plugins.jenkins.io/warnings-ng/) when security scanning is enabled.
+The Jenkins controller requires the [Workspace Cleanup Plugin](https://plugins.jenkins.io/ws-cleanup/). It also requires the [Warnings Next Generation Plugin](https://plugins.jenkins.io/warnings-ng/) when security scanning is enabled.
 
 The Jenkins agent requires:
 
@@ -183,6 +183,7 @@ containerImagePipeline(
 - The first build configures parameters and branch indexing behavior, then exits with a `NOT_BUILT` result without building or publishing an image. Run the job again to build it.
 - Changes to job properties and parameter defaults take effect after a build updates the job configuration.
 - Concurrent builds of the same job are disabled by default. Independent jobs and branches remain isolated by their Jenkins `BUILD_TAG` staging directory.
+- The Jenkins workspace is cleaned after every run using the Workspace Cleanup plugin.
 - Failure notifications use the Jenkins `ALERT_EMAIL` environment variable by default. Set `alertEmail` in the Jenkinsfile to override it; notifications are disabled when neither provides an address.
 - The registry hostname must be explicit. Use `docker.io` for Docker Hub.
 - The remote staging directory is removed after every build, while Podman retains its local image layers for subsequent build caching.

@@ -33,6 +33,7 @@ Replace `[...]` with pipeline or step specific configuration parameters.
 - Jenkins with Global Pipeline Libraries configured to include this repository.
 - Jenkins agents with the tools required by the selected pipeline.
 - Appropriate credentials configured in Jenkins for pipelines that require them.
+- The [Workspace Cleanup Plugin](https://plugins.jenkins.io/ws-cleanup/) for `containerImagePipeline` and `quadletPipeline`.
 - The [Warnings Plugin](https://plugins.jenkins.io/warnings-ng/) for Jenkins and `trivy` on agents when security scanning is enabled.
 
 ## Documentation

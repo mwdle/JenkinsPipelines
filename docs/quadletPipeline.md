@@ -48,6 +48,8 @@ my-app/
 
 ## System Requirements
 
+The Jenkins controller requires the [Workspace Cleanup Plugin](https://plugins.jenkins.io/ws-cleanup/). It also requires the [Warnings Next Generation Plugin](https://plugins.jenkins.io/warnings-ng/) when security scanning is enabled.
+
 The Jenkins agent requires:
 
 - `sh`
@@ -223,5 +225,6 @@ quadletPipeline(
 - The first build configures parameters and branch indexing behavior, then exits with a `NOT_BUILT` result without managing the application. Run the job again to install or remove it.
 - Changes to job properties and parameter defaults take effect after a build updates the job configuration.
 - Concurrent builds of the same job are disabled by default. Build-specific staging paths also prevent separate jobs from overwriting one another's staged files.
+- The Jenkins workspace is cleaned after every run using the Workspace Cleanup plugin.
 - Failure notifications use the Jenkins `ALERT_EMAIL` environment variable by default. Set `alertEmail` in the Jenkinsfile to override it; notifications are disabled when neither provides an address.
 - Host key checking is disabled because agents are ephemeral. Use this pipeline only with trusted deployment targets and networks.

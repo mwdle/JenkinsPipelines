@@ -102,6 +102,8 @@ void call(Map configParams = [:]) {
                 )
             }
             throw err
+        } finally {
+            deleteDir()
         }
     }
 }

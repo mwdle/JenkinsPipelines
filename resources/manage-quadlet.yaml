@@ -33,9 +33,7 @@
                 delete: true
                 checksum: true
                 times: false
-                rsync_opts:
-                  - "--mkpath"
-                  - "--exclude=.git"
+                rsync_opts: "{{ ['--mkpath', '--exclude=.git'] + (staging_exclusions | default([])) }}"
               changed_when: false
 
             - name: Install Quadlet application

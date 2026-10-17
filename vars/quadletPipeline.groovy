@@ -15,6 +15,7 @@ void call(Map configParams = [:]) {
         alertEmail:                 env.ALERT_EMAIL?.trim() ?: null,
         postCheckoutSteps:          null,
         stagingDirectory:           '.staging',
+        stagingExclusions:          ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
         podmanSecretMappings:       [],
         // Parameter defaults
         defaultTargetHost:          'host.containers.internal',
@@ -97,6 +98,7 @@ void call(Map configParams = [:]) {
                         source_directory:       pwd(),
                         quadlet_rm:             params.QUADLET_RM,
                         force_restart:          params.FORCE_RESTART,
+                        staging_exclusions:     config.stagingExclusions.findAll { it?.trim() }.collect { "--exclude=${it.trim()}" },
                         podman_secret_mappings: secretMetadata
                     ]
                 )
@@ -175,6 +177,14 @@ private void validateConfig(Map config) {
     }
     if (config.stagingDirectory.startsWith('/') || config.stagingDirectory.tokenize('/').contains('..')) {
         error("Config Error: 'stagingDirectory' must be relative to the target user's home directory")
+    }
+    if (!(config.stagingExclusions instanceof List)) {
+        error("Config Error: 'stagingExclusions' must be a List")
+    }
+    config.stagingExclusions.eachWithIndex { exclusion, index ->
+        if (!(exclusion instanceof CharSequence) || !exclusion.trim()) {
+            error("Config Error: 'stagingExclusions[${index}]' must be a non-empty String")
+        }
     }
     if (!(config.podmanSecretMappings instanceof List)) {
         error("Config Error: 'podmanSecretMappings' must be a List")

@@ -12,7 +12,7 @@ The pipeline provides a consistent management flow for repositories containing Q
 2. **Secret Provisioning:** Converts configured Jenkins credentials into Podman secrets on the target host.
 3. **Repository Staging:** Synchronizes the repository to a build-specific temporary staging directory while excluding `.git` metadata.
 4. **Quadlet Installation:** Installs the staged repository as a Podman Quadlet application.
-5. **Service Management:** Restarts the application's container, pod, and kube services when the installed content changes. Unchanged services are ensured to be running.
+5. **Service Management:** Restarts the application's container, pod, and kube services when the installed content changes or when `FORCE_RESTART` is enabled. Unchanged services are ensured to be running.
 6. **Staging Cleanup:** Removes the build-specific staging directory after the operation, including when a task fails.
 
 The repository name becomes both the Quadlet application name and the final component of its staging path. For example, a repository named `caddy-config` is temporarily staged at `~/.staging/<BUILD_TAG>/caddy-config` by default and installed as the `caddy-config` Quadlet application.
@@ -78,6 +78,7 @@ The target Linux host requires:
 | `TARGET_PORT`           | String     | SSH port on the deployment target.                                          |
 | `TARGET_SSH_CREDENTIAL` | Credential | Jenkins SSH Username with private key credential used for target access.    |
 | `QUADLET_RM`            | Boolean    | Stop and remove the installed Quadlet application instead of installing it. |
+| `FORCE_RESTART`         | Boolean    | Force restart Quadlet services even if no changes were detected.            |
 
 ### Config Map Parameters (Jenkinsfile)
 
@@ -96,6 +97,7 @@ The target Linux host requires:
 | `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                                      |
 | `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                                         |
 | `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).                             |
+| `defaultForceRestart`        | Boolean   | Default value for `FORCE_RESTART` (default: `false`).                                                       |
 
 ---
 
@@ -199,6 +201,7 @@ quadletPipeline(
     defaultTargetHost: 'host.containers.internal',
     defaultTargetPort: 22,
     defaultTargetSshCredential: 'homelab-ssh',
+    defaultForceRestart: false,
     podmanSecretMappings: [
         [
             type: 'string',

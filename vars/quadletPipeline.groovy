@@ -20,6 +20,7 @@ void call(Map configParams = [:]) {
         defaultTargetHost:          'host.containers.internal',
         defaultTargetPort:          52222,
         defaultTargetSshCredential: 'lab-ssh',
+        defaultForceRestart:        false,
     ]
     Map config = defaults + configParams
     validateConfig(config)
@@ -95,6 +96,7 @@ void call(Map configParams = [:]) {
                         staging_directory:      "${config.stagingDirectory}/${env.BUILD_TAG}/${repositoryName}",
                         source_directory:       pwd(),
                         quadlet_rm:             params.QUADLET_RM,
+                        force_restart:          params.FORCE_RESTART,
                         podman_secret_mappings: secretMetadata
                     ]
                 )
@@ -132,6 +134,7 @@ private void applyJobProperties(Map config) {
                 required: true
             ),
             booleanParam(name: 'QUADLET_RM', defaultValue: false, description: 'Stop and remove the installed Quadlet application instead of installing it.'),
+            booleanParam(name: 'FORCE_RESTART', defaultValue: config.defaultForceRestart, description: 'Force restart Quadlet services even if no changes were detected.'),
         ])
     ]
     if (config.disableConcurrentBuilds) {

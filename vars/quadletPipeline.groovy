@@ -114,7 +114,9 @@ void call(Map configParams = [:]) {
             }
             throw err
         } finally {
-            cleanWs(deleteDirs: true, disableDeferredWipeout: true)
+            stage('Cleanup') {
+                cleanWs(deleteDirs: true, disableDeferredWipeout: true)
+            }
         }
     }
 }

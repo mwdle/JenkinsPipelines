@@ -25,6 +25,7 @@
                 name: "{{ item.name }}"
                 skip_existing: true
                 data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
+              register: secret_provision
 
             - name: Stage Quadlet application
               ansible.posix.synchronize:
@@ -53,7 +54,7 @@
               loop: "{{ quadlet_info.quadlets | selectattr('App', 'equalto', repository_name) | list }}"
               ansible.builtin.systemd:
                 name: "{{ item.UnitName }}"
-                state: "{{ 'restarted' if quadlet_install.changed or (force_restart | default(false) | bool) else 'started' }}"
+                state: "{{ 'restarted' if quadlet_install.changed or secret_provision.changed or (force_restart | default(false) | bool) else 'started' }}"
                 scope: user
 
       always:

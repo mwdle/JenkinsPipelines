@@ -6,22 +6,23 @@
 void call(Map configParams = [:]) {
     // Centralized default configuration. User-provided config overrides defaults.
     Map defaults = [
-        agentLabel:                 'ephemeral',
-        disableConcurrentBuilds:    true,
-        disableIndexTriggers:       false,
-        disableSecurityScan:        false,
-        cronSchedule:               null,
-        additionalTriggers:         [],
-        alertEmail:                 env.ALERT_EMAIL?.trim() ?: null,
-        postCheckoutSteps:          null,
-        stagingDirectory:           '.staging',
-        stagingExclusions:          ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
-        podmanSecretMappings:       [],
+        agentLabel:                  'ephemeral',
+        disableConcurrentBuilds:     true,
+        disableIndexTriggers:        false,
+        disableSecurityScan:         false,
+        cronSchedule:                null,
+        additionalTriggers:          [],
+        alertEmail:                  env.ALERT_EMAIL?.trim() ?: null,
+        postCheckoutSteps:           null,
+        stagingDirectory:            '.staging',
+        stagingExclusions:           ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
+        additionalStagingExclusions: [],
+        podmanSecretMappings:        [],
         // Parameter defaults
-        defaultTargetHost:          'host.containers.internal',
-        defaultTargetPort:          52222,
-        defaultTargetSshCredential: 'lab-ssh',
-        defaultForceRestart:        false,
+        defaultTargetHost:           'host.containers.internal',
+        defaultTargetPort:           52222,
+        defaultTargetSshCredential:  'lab-ssh',
+        defaultForceRestart:         false,
     ]
     Map config = defaults + configParams
     validateConfig(config)
@@ -98,7 +99,7 @@ void call(Map configParams = [:]) {
                         source_directory:       pwd(),
                         quadlet_rm:             params.QUADLET_RM,
                         force_restart:          params.FORCE_RESTART,
-                        staging_exclusions:     config.stagingExclusions.findAll { it?.trim() }.collect { "--exclude=${it.trim()}" },
+                        staging_exclusions:     (config.stagingExclusions + config.additionalStagingExclusions).findAll { it?.trim() }.collect { "--exclude=${it.trim()}" },
                         podman_secret_mappings: secretMetadata
                     ]
                 )
@@ -186,6 +187,14 @@ private void validateConfig(Map config) {
     config.stagingExclusions.eachWithIndex { exclusion, index ->
         if (!(exclusion instanceof CharSequence) || !exclusion.trim()) {
             error("Config Error: 'stagingExclusions[${index}]' must be a non-empty String")
+        }
+    }
+    if (!(config.additionalStagingExclusions instanceof List)) {
+        error("Config Error: 'additionalStagingExclusions' must be a List")
+    }
+    config.additionalStagingExclusions.eachWithIndex { exclusion, index ->
+        if (!(exclusion instanceof CharSequence) || !exclusion.trim()) {
+            error("Config Error: 'additionalStagingExclusions[${index}]' must be a non-empty String")
         }
     }
     if (!(config.podmanSecretMappings instanceof List)) {

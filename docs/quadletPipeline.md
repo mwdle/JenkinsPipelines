@@ -82,23 +82,24 @@ The target Linux host requires:
 
 ### Config Map Parameters (Jenkinsfile)
 
-| Parameter                    | Type      | Description                                                                                                                                                                |
-| ---------------------------- | --------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `agentLabel`                 | String    | Jenkins agent label (default: `"ephemeral"`).                                                                                                                              |
-| `disableConcurrentBuilds`    | Boolean   | Prevent concurrent builds of the job (default: `true`).                                                                                                                    |
-| `disableIndexTriggers`       | Boolean   | Disable automatic branch indexing triggers (default: `false`).                                                                                                             |
-| `disableSecurityScan`        | Boolean   | Disable the shared Trivy security scan (default: `false`).                                                                                                                 |
-| `cronSchedule`               | String    | Cron expression for periodic builds (default: `null`).                                                                                                                     |
-| `additionalTriggers`         | List      | Additional scripted pipeline trigger objects (default: `[]`).                                                                                                              |
-| `alertEmail`                 | String    | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).                                                                                  |
-| `postCheckoutSteps`          | Closure   | Custom steps to run after checkout (default: `null`).                                                                                                                      |
-| `stagingDirectory`           | String    | Base directory under the remote SSH user's home for temporary build-specific staging (default: `.staging`).                                                                |
-| `stagingExclusions`          | List      | File patterns to exclude from staging, preventing non-Quadlet file changes from triggering restarts (default: `['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json']`). |
-| `podmanSecretMappings`       | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                                                                                              |
-| `defaultTargetHost`          | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                                                                                                     |
-| `defaultTargetPort`          | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                                                                                                        |
-| `defaultTargetSshCredential` | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).                                                                                            |
-| `defaultForceRestart`        | Boolean   | Default value for `FORCE_RESTART` (default: `false`).                                                                                                                      |
+| Parameter                     | Type      | Description                                                                                                                                                                                                             |
+| ----------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `agentLabel`                  | String    | Jenkins agent label (default: `"ephemeral"`).                                                                                                                                                                           |
+| `disableConcurrentBuilds`     | Boolean   | Prevent concurrent builds of the job (default: `true`).                                                                                                                                                                 |
+| `disableIndexTriggers`        | Boolean   | Disable automatic branch indexing triggers (default: `false`).                                                                                                                                                          |
+| `disableSecurityScan`         | Boolean   | Disable the shared Trivy security scan (default: `false`).                                                                                                                                                              |
+| `cronSchedule`                | String    | Cron expression for periodic builds (default: `null`).                                                                                                                                                                  |
+| `additionalTriggers`          | List      | Additional scripted pipeline trigger objects (default: `[]`).                                                                                                                                                           |
+| `alertEmail`                  | String    | Email address for failure notifications (default: `ALERT_EMAIL`, or disabled when unset).                                                                                                                               |
+| `postCheckoutSteps`           | Closure   | Custom steps to run after checkout (default: `null`).                                                                                                                                                                   |
+| `stagingDirectory`            | String    | Base directory under the remote SSH user's home for temporary build-specific staging (default: `.staging`).                                                                                                             |
+| `stagingExclusions`           | List      | File patterns to exclude from staging, **replacing** the default list entirely. Use `additionalStagingExclusions` to extend the defaults instead (default: `['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json']`). |
+| `additionalStagingExclusions` | List      | Extra file patterns to exclude from staging, appended to `stagingExclusions`. Use this to extend the defaults without redefining them (default: `[]`).                                                                  |
+| `podmanSecretMappings`        | List<Map> | Jenkins credential-to-Podman-secret mappings (default: `[]`).                                                                                                                                                           |
+| `defaultTargetHost`           | String    | Default value for `TARGET_HOST` (default: `host.containers.internal`).                                                                                                                                                  |
+| `defaultTargetPort`           | Integer   | Default value for `TARGET_PORT` (default: `52222`).                                                                                                                                                                     |
+| `defaultTargetSshCredential`  | String    | Default Jenkins credential ID for `TARGET_SSH_CREDENTIAL` (default: `lab-ssh`).                                                                                                                                         |
+| `defaultForceRestart`         | Boolean   | Default value for `FORCE_RESTART` (default: `false`).                                                                                                                                                                   |
 
 ---
 
@@ -199,7 +200,8 @@ quadletPipeline(
         echo "Running custom post-checkout steps..."
     },
     stagingDirectory: '.staging',
-    stagingExclusions: ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
+    stagingExclusions: ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json', 'docs/'],
+    additionalStagingExclusions: ['images/'],
     defaultTargetHost: 'host.containers.internal',
     defaultTargetPort: 22,
     defaultTargetSshCredential: 'homelab-ssh',

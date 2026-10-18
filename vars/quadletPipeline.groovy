@@ -15,7 +15,7 @@ void call(Map configParams = [:]) {
         alertEmail:                  env.ALERT_EMAIL?.trim() ?: null,
         postCheckoutSteps:           null,
         stagingDirectory:            '.staging',
-        stagingExclusions:           ['Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
+        stagingExclusions:           ['.gitignore', 'Jenkinsfile', 'LICENSE', 'README.md', 'renovate.json'],
         additionalStagingExclusions: [],
         podmanSecretMappings:        [],
         // Parameter defaults

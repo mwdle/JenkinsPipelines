@@ -164,7 +164,7 @@ Secret=caddy_cloudflare_api_token,target=cloudflare_api_token
 ## Usage in Jenkinsfiles
 
 ```groovy
-@Library('JenkinsPipelines') _
+@Library('jenkins-pipelines') _
 
 quadletPipeline(
     defaultTargetSshCredential: 'homelab-ssh'
@@ -174,7 +174,7 @@ quadletPipeline(
 ### Full Example
 
 ```groovy
-@Library('JenkinsPipelines') _
+@Library('jenkins-pipelines') _
 
 quadletPipeline(
     agentLabel: 'ephemeral',

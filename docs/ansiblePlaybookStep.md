@@ -122,7 +122,7 @@ vars:
 ### Full Example
 
 ```groovy
-@Library('JenkinsPipelines') _
+@Library('jenkins-pipelines') _
 
 node('ephemeral') {
     try {

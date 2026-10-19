@@ -1,4 +1,4 @@
-# JenkinsPipelines
+# Jenkins Pipelines
 
 A shared Jenkins pipeline library containing multiple reusable pipelines and functions.
 
@@ -13,7 +13,6 @@ Each function can be easily integrated into your Jenkins builds via the Jenkins 
 
 - [ansiblePlaybookStep](docs/ansiblePlaybookStep.md)
 - [containerImagePipeline](docs/containerImagePipeline.md)
-- [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)
 
@@ -22,7 +21,7 @@ Each function can be easily integrated into your Jenkins builds via the Jenkins 
 To use a tool from this library, add it to your `Jenkinsfile`, for example:
 
 ```groovy
-@Library("JenkinsPipelines") _
+@Library("jenkins-pipelines") _
 quadletPipeline([...])
 ```
 
@@ -43,6 +42,5 @@ Detailed documentation for each pipeline and step is located in the `docs/` fold
 
 - [ansiblePlaybookStep](docs/ansiblePlaybookStep.md)
 - [containerImagePipeline](docs/containerImagePipeline.md)
-- [dockerComposePipeline](docs/dockerComposePipeline.md)
 - [quadletPipeline](docs/quadletPipeline.md)
 - [securityScanStep](docs/securityScanStep.md)

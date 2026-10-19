@@ -47,7 +47,7 @@ This pipeline is designed for Unix-like Jenkins agents (Linux, macOS). Required 
 ## Usage in Jenkinsfiles
 
 ```groovy
-@Library("JenkinsPipelines") _
+@Library("jenkins-pipelines") _
 // Basic usage (scans repository files only)
 securityScanStep()
 // Advanced usage (scans repository files, container images)

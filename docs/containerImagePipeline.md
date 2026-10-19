@@ -109,7 +109,7 @@ Trivy scans the locally built image through PinP's Docker-compatible API before 
 ## Usage in Jenkinsfiles
 
 ```groovy
-@Library('JenkinsPipelines') _
+@Library('jenkins-pipelines') _
 
 containerImagePipeline(
     defaultImageName: 'lab/jenkins-agent'
@@ -119,7 +119,7 @@ containerImagePipeline(
 ### Full Example
 
 ```groovy
-@Library('JenkinsPipelines') _
+@Library('jenkins-pipelines') _
 
 containerImagePipeline(
     agentLabel: 'podman',

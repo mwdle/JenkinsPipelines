@@ -21,7 +21,7 @@ void call(Map configParams = [:]) {
         // Parameter defaults
         defaultTargetHost:           'host.containers.internal',
         defaultTargetPort:           52222,
-        defaultTargetSshCredential:  'lab-ssh',
+        defaultTargetSshCredential:  'jenkins-lab-ssh',
         defaultForceRestart:         false,
     ]
     Map config = defaults + configParams

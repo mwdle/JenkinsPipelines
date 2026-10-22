@@ -19,13 +19,6 @@
         - name: Install Quadlet application
           when: not (quadlet_rm | default(false) | bool)
           block:
-            - name: Provision Podman secrets
-              loop: "{{ podman_secret_mappings | default([]) }}"
-              containers.podman.podman_secret:
-                name: "{{ item.name }}"
-                data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
-              register: secret_provision
-
             - name: Stage Quadlet application
               ansible.posix.synchronize:
                 src: "{{ source_directory }}/"
@@ -35,6 +28,13 @@
                 times: false
                 rsync_opts: "{{ ['--mkpath', '--exclude=.git'] + (staging_exclusions | default([])) }}"
               changed_when: false
+
+            - name: Provision Podman secrets
+              loop: "{{ podman_secret_mappings | default([]) }}"
+              containers.podman.podman_secret:
+                name: "{{ item.name }}"
+                data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
+              register: secret_provision
 
             - name: Install Quadlet application
               containers.podman.podman_quadlet:

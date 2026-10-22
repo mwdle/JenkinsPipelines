@@ -23,7 +23,6 @@
               loop: "{{ podman_secret_mappings | default([]) }}"
               containers.podman.podman_secret:
                 name: "{{ item.name }}"
-                skip_existing: true
                 data: "{{ lookup('env', item.variable) if item.source == 'env' else lookup('file', lookup('env', item.variable), rstrip=false) }}"
               register: secret_provision
 
